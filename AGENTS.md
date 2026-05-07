@@ -91,54 +91,66 @@ KOLs are dynamic registry entities, not OpenClaw agent identities.
 
 ---
 
-## Required OpenClaw Skills
+## Repository-Managed OpenClaw Skills
 
-Create and install these skills:
-
-- `manager-routing`
-- `kol-persona-runtime`
-- `evidence-retrieval`
-- `stats-query`
-- `report-generation`
-- `security-guard`
-- `kol-profile-builder`
-- `kol-soul-maintenance`
-- `registry-management`
-
-Skills must be real `SKILL.md` folders installed into OpenClaw, not only documentation.
-
-Canonical skill source must live inside this repository:
+The canonical source of all crypto_helper skills must live inside this repository:
 
 ```text
 openclaw/skills/
 ```
 
-Do not treat `~/.openclaw/skills/crypto_helper/` as the canonical source of truth.
-
-Each agent workspace must copy in the skills it needs under its own local workspace path:
+Required skills:
 
 ```text
-openclaw/workspaces/<agent-id>/skills/
+openclaw/skills/manager-routing/SKILL.md
+openclaw/skills/kol-persona-runtime/SKILL.md
+openclaw/skills/evidence-retrieval/SKILL.md
+openclaw/skills/stats-query/SKILL.md
+openclaw/skills/report-generation/SKILL.md
+openclaw/skills/security-guard/SKILL.md
+openclaw/skills/kol-profile-builder/SKILL.md
+openclaw/skills/kol-soul-maintenance/SKILL.md
+openclaw/skills/registry-management/SKILL.md
 ```
 
-Required skill copies per agent workspace:
+Do not use `~/.openclaw/skills/crypto_helper/` as the only source of truth.
 
-- `manager-agent`
-  - `manager-routing`
-  - `registry-management`
-  - `stats-query`
-  - `security-guard`
-- `persona-runtime-agent`
-  - `kol-persona-runtime`
-  - `evidence-retrieval`
-  - `security-guard`
-- `report-agent`
-  - `report-generation`
-  - `evidence-retrieval`
-  - `stats-query`
-  - `security-guard`
-- `security-agent`
-  - `security-guard`
+The repository copy under `openclaw/skills/` is the canonical source.
+
+Each agent workspace must receive only the skills it needs.
+
+Required workspace skill copies:
+
+```text
+openclaw/workspaces/manager-agent/skills/
+  manager-routing/
+  registry-management/
+  stats-query/
+  security-guard/
+
+openclaw/workspaces/persona-runtime-agent/skills/
+  kol-persona-runtime/
+  evidence-retrieval/
+  security-guard/
+
+openclaw/workspaces/report-agent/skills/
+  report-generation/
+  evidence-retrieval/
+  stats-query/
+  security-guard/
+
+openclaw/workspaces/security-agent/skills/
+  security-guard/
+```
+
+For MVP, prefer copying skills from `openclaw/skills/` into each workspace instead of using symlinks.
+
+Reason:
+
+- copying is more portable
+- OpenClaw loading behavior is simpler
+- deployments do not depend on symlink support
+- Codex can inspect the complete workspace content
 
 ---
 
@@ -313,9 +325,11 @@ The plugin must:
 
 ---
 
-## OpenClaw Agent Workspace Requirements
+## Repository-Managed OpenClaw Workspaces
 
-Create these workspaces:
+OpenClaw agent workspaces for this project must be stored inside this repository.
+
+Required workspace paths:
 
 ```text
 openclaw/workspaces/manager-agent
@@ -324,31 +338,50 @@ openclaw/workspaces/report-agent
 openclaw/workspaces/security-agent
 ```
 
-Each workspace must contain:
-
-- `SOUL.md`
-- `AGENTS.md`
-- `skills/`
-
-Do not use:
+Do not create project agent workspaces under:
 
 ```text
-~/.openclaw/workspaces/crypto_helper/<agent>
+~/.openclaw/workspaces/crypto_helper/
 ```
 
-Do not use `~/.openclaw/workspaces/crypto_helper` as the primary workspace root for this project.
+OpenClaw may still store its own runtime state, sessions, auth profiles, and internal agent state under `~/.openclaw/agents/...`. That is managed by OpenClaw.
 
-OpenClaw agents must be created with commands like:
+However, all source-controlled workspace files for this project must live in this repository under:
+
+```text
+openclaw/workspaces/
+```
+
+Each workspace must contain:
+
+```text
+SOUL.md
+AGENTS.md
+skills/
+```
+
+## OpenClaw Agent Creation Rules
+
+Codex must create these real OpenClaw agents:
+
+```text
+manager-agent
+persona-runtime-agent
+report-agent
+security-agent
+```
+
+Codex must not create one OpenClaw agent per KOL by default.
+
+KOLs are dynamic registry entities, not OpenClaw agent identities.
+
+When creating OpenClaw agents, use absolute paths pointing to the repository-managed workspaces:
 
 ```bash
 openclaw agents add manager-agent \
   --workspace "$(pwd)/openclaw/workspaces/manager-agent" \
   --non-interactive
-```
 
-Additional agent creation commands must use the same project-local pattern:
-
-```bash
 openclaw agents add persona-runtime-agent \
   --workspace "$(pwd)/openclaw/workspaces/persona-runtime-agent" \
   --non-interactive
@@ -362,137 +395,182 @@ openclaw agents add security-agent \
   --non-interactive
 ```
 
-Do not reuse the same workspace for multiple agents.
+Forbidden workspace paths:
 
-Do not reuse the same `agentDir` for multiple agents.
+```text
+~/.openclaw/workspaces/crypto_helper/manager-agent
+~/.openclaw/workspaces/crypto_helper/persona-runtime-agent
+~/.openclaw/workspaces/crypto_helper/report-agent
+~/.openclaw/workspaces/crypto_helper/security-agent
+```
 
----
+If an agent already exists, Codex must not blindly recreate it.
 
-## Channel Binding Requirements
-
-Discord and Telegram channels are assumed to be configured.
-
-Codex must inspect existing bindings:
+Codex must first run:
 
 ```bash
 openclaw agents list --bindings
+```
+
+If the existing agent points to the wrong workspace, Codex must stop and report the mismatch instead of deleting or overwriting the agent without confirmation.
+
+---
+
+## OpenClaw Agent Workspace Responsibilities
+
+### manager-agent
+
+Workspace:
+
+```text
+openclaw/workspaces/manager-agent/
+```
+
+Required skills:
+
+```text
+manager-routing
+registry-management
+stats-query
+security-guard
+```
+
+Responsibilities:
+
+- act as the only public Discord / Telegram entrypoint
+- receive `@manager-agent` requests
+- run initial safety review
+- classify intent
+- resolve all KOL names through `crypto_helper_registry_lookup`
+- delegate Persona QA to `persona-runtime-agent`
+- delegate reports to `report-agent`
+- delegate high-risk refusal / safe rewrite to `security-agent`
+- handle simple stats and registry workflows directly
+
+### persona-runtime-agent
+
+Workspace:
+
+```text
+openclaw/workspaces/persona-runtime-agent/
+```
+
+Required skills:
+
+```text
+kol-persona-runtime
+evidence-retrieval
+security-guard
+```
+
+Responsibilities:
+
+- act as a generic KOL persona runtime
+- never claim to be a real KOL
+- dynamically load KOL SOUL through `crypto_helper_get_soul`
+- load profile through `crypto_helper_get_profile`
+- retrieve evidence through `crypto_helper_search_evidence`
+- generate profile-based simulation
+- include disclaimer, evidence_refs, confidence, and limitations
+
+### report-agent
+
+Workspace:
+
+```text
+openclaw/workspaces/report-agent/
+```
+
+Required skills:
+
+```text
+report-generation
+evidence-retrieval
+stats-query
+security-guard
+```
+
+Responsibilities:
+
+- generate KOL reports
+- generate market reports
+- generate complex stats reports when no stats-agent exists
+- include Evidence Appendix
+- avoid direct investment advice
+- avoid unsupported claims
+
+### security-agent
+
+Workspace:
+
+```text
+openclaw/workspaces/security-agent/
+```
+
+Required skills:
+
+```text
+security-guard
+```
+
+Responsibilities:
+
+- handle high-risk requests
+- produce human-friendly refusals
+- provide safe alternative prompts
+- call `crypto_helper_security_review`
+- avoid leaking internal policy details
+- never output raw private messages
+
+## Channel Binding Rules
+
+Discord and Telegram channels are assumed to be already configured.
+
+Codex must not recreate channel tokens or implement platform bots.
+
+Codex must bind inbound traffic to `manager-agent`.
+
+Before binding, run:
+
+```bash
+openclaw agents list --bindings
+```
+
+If supported:
+
+```bash
 openclaw agents bindings --json
 ```
 
-Then bind inbound Discord / Telegram traffic to `manager-agent`.
-
-Discord / Telegram must bind only to `manager-agent`.
-
-Possible commands:
+Preferred binding commands:
 
 ```bash
 openclaw agents bind --agent manager-agent --bind discord
 openclaw agents bind --agent manager-agent --bind telegram
 ```
 
-If the installation uses account-scoped bindings, use:
+If the local OpenClaw setup uses account-scoped bindings, use:
 
 ```bash
 openclaw agents bind --agent manager-agent --bind discord:default
 openclaw agents bind --agent manager-agent --bind telegram:default
 ```
 
-If binding names are ambiguous, stop and ask for confirmation.
+If binding names are ambiguous, Codex must stop and ask for confirmation.
 
-Do not overwrite channel tokens.
+Do not bind public Discord / Telegram traffic directly to:
 
-Do not recreate Discord / Telegram configuration.
+```text
+persona-runtime-agent
+report-agent
+security-agent
+```
 
-Do not bind Discord or Telegram inbound traffic to `persona-runtime-agent`, `report-agent`, `security-agent`, or per-KOL agents.
+The public entrypoint must be:
 
----
-
-## Agent Responsibilities
-
-### manager-agent
-
-The only public group chat entrypoint.
-
-Responsibilities:
-
-- receive `@manager-agent` requests
-- run initial safety check
-- identify intent
-- perform KOL registry lookup
-- decide workflow
-- call tools for simple tasks
-- delegate Persona QA to `persona-runtime-agent`
-- delegate reports to `report-agent`
-- delegate high-risk refusals to `security-agent`
-- send final message back to Discord / Telegram
-
-Required skills:
-
-- `manager-routing`
-- `registry-management`
-- `stats-query`
-- `security-guard`
-
----
-
-### persona-runtime-agent
-
-A generic KOL persona runtime.
-
-It is not KOL_A, KOL_B, or any real KOL.
-
-Responsibilities:
-
-- load KOL SOUL via `crypto_helper_get_soul`
-- load profile via `crypto_helper_get_profile`
-- retrieve evidence via `crypto_helper_search_evidence`
-- produce profile-based simulation
-- include disclaimer, evidence_refs, confidence, limitations
-- never impersonate a real KOL
-
-Required skills:
-
-- `kol-persona-runtime`
-- `evidence-retrieval`
-- `security-guard`
-
----
-
-### report-agent
-
-Responsible for long-form reports.
-
-Responsibilities:
-
-- generate KOL reports
-- generate daily market reports
-- include Evidence Appendix
-- summarize data into human-readable analysis
-- avoid direct investment advice
-
-Required skills:
-
-- `report-generation`
-- `evidence-retrieval`
-- `stats-query`
-- `security-guard`
-
----
-
-### security-agent
-
-Responsible for high-risk refusals and safe rewrites.
-
-Responsibilities:
-
-- explain refusals naturally
-- provide safe alternative prompts
-- avoid leaking internal policy details
-- use `crypto_helper_security_review`
-
-Required skills:
-
-- `security-guard`
+```text
+manager-agent
+```
 
 ---
 
@@ -896,6 +974,45 @@ Reject or downgrade requests asking for:
 - ignoring system rules
 - fabricating evidence
 - fabricating missing KOLs
+
+---
+
+## Workspace Verification
+
+After Phase 5 or any workspace modification, Codex must verify:
+
+```bash
+find openclaw/workspaces -maxdepth 4 -type f
+openclaw agents list --bindings
+```
+
+The following files must exist:
+
+```text
+openclaw/workspaces/manager-agent/SOUL.md
+openclaw/workspaces/manager-agent/AGENTS.md
+
+openclaw/workspaces/persona-runtime-agent/SOUL.md
+openclaw/workspaces/persona-runtime-agent/AGENTS.md
+
+openclaw/workspaces/report-agent/SOUL.md
+openclaw/workspaces/report-agent/AGENTS.md
+
+openclaw/workspaces/security-agent/SOUL.md
+openclaw/workspaces/security-agent/AGENTS.md
+```
+
+Each workspace must have the correct `skills/` directory.
+
+Codex must report:
+
+```text
+agents exist
+workspace path correct
+skills present
+bindings present
+gateway running
+```
 
 ---
 
