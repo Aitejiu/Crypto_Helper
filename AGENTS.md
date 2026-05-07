@@ -107,17 +107,38 @@ Create and install these skills:
 
 Skills must be real `SKILL.md` folders installed into OpenClaw, not only documentation.
 
-Preferred shared skill location:
+Canonical skill source must live inside this repository:
 
 ```text
-~/.openclaw/skills/crypto_helper/
+openclaw/skills/
 ```
 
-Agent-specific overrides may be placed under each agent workspace:
+Do not treat `~/.openclaw/skills/crypto_helper/` as the canonical source of truth.
+
+Each agent workspace must copy in the skills it needs under its own local workspace path:
 
 ```text
-~/.openclaw/workspaces/crypto_helper/<agent-id>/skills/
+openclaw/workspaces/<agent-id>/skills/
 ```
+
+Required skill copies per agent workspace:
+
+- `manager-agent`
+  - `manager-routing`
+  - `registry-management`
+  - `stats-query`
+  - `security-guard`
+- `persona-runtime-agent`
+  - `kol-persona-runtime`
+  - `evidence-retrieval`
+  - `security-guard`
+- `report-agent`
+  - `report-generation`
+  - `evidence-retrieval`
+  - `stats-query`
+  - `security-guard`
+- `security-agent`
+  - `security-guard`
 
 ---
 
@@ -297,23 +318,47 @@ The plugin must:
 Create these workspaces:
 
 ```text
-~/.openclaw/workspaces/crypto_helper/manager-agent
-~/.openclaw/workspaces/crypto_helper/persona-runtime-agent
-~/.openclaw/workspaces/crypto_helper/report-agent
-~/.openclaw/workspaces/crypto_helper/security-agent
+openclaw/workspaces/manager-agent
+openclaw/workspaces/persona-runtime-agent
+openclaw/workspaces/report-agent
+openclaw/workspaces/security-agent
 ```
 
 Each workspace must contain:
 
 - `SOUL.md`
 - `AGENTS.md`
-- optional `skills/`
+- `skills/`
+
+Do not use:
+
+```text
+~/.openclaw/workspaces/crypto_helper/<agent>
+```
+
+Do not use `~/.openclaw/workspaces/crypto_helper` as the primary workspace root for this project.
 
 OpenClaw agents must be created with commands like:
 
 ```bash
 openclaw agents add manager-agent \
-  --workspace ~/.openclaw/workspaces/crypto_helper/manager-agent \
+  --workspace "$(pwd)/openclaw/workspaces/manager-agent" \
+  --non-interactive
+```
+
+Additional agent creation commands must use the same project-local pattern:
+
+```bash
+openclaw agents add persona-runtime-agent \
+  --workspace "$(pwd)/openclaw/workspaces/persona-runtime-agent" \
+  --non-interactive
+
+openclaw agents add report-agent \
+  --workspace "$(pwd)/openclaw/workspaces/report-agent" \
+  --non-interactive
+
+openclaw agents add security-agent \
+  --workspace "$(pwd)/openclaw/workspaces/security-agent" \
   --non-interactive
 ```
 
@@ -336,6 +381,8 @@ openclaw agents bindings --json
 
 Then bind inbound Discord / Telegram traffic to `manager-agent`.
 
+Discord / Telegram must bind only to `manager-agent`.
+
 Possible commands:
 
 ```bash
@@ -355,6 +402,8 @@ If binding names are ambiguous, stop and ask for confirmation.
 Do not overwrite channel tokens.
 
 Do not recreate Discord / Telegram configuration.
+
+Do not bind Discord or Telegram inbound traffic to `persona-runtime-agent`, `report-agent`, `security-agent`, or per-KOL agents.
 
 ---
 
