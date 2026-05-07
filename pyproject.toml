@@ -2,7 +2,7 @@
 name = "crypto-helper"
 version = "0.1.0"
 description = "Domain package for the OpenClaw-integrated crypto helper workspace."
-readme = "AGENTS.md"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.13.4",
