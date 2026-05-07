@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import csv
 import json
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from crypto_helper.cli import app
-from crypto_helper.core.import_service import import_core_tables, promote_imported_kols
+from crypto_helper.core.import_service import (
+    import_core_tables,
+    process_pending_imports,
+    promote_imported_kols,
+)
 
 
 def test_import_core_tables_builds_mock_files(tmp_path: Path) -> None:
@@ -106,6 +111,58 @@ def test_promote_imported_kols_cli_returns_json(cli_runner: CliRunner, tmp_path:
     payload = json.loads(result.output)
     assert payload["ok"] is True
     assert payload["promoted_count"] == 1
+
+
+def test_process_pending_imports_cli_returns_json(cli_runner: CliRunner, tmp_path: Path) -> None:
+    output_dir = _build_runtime_dir(tmp_path / "runtime")
+    pending_dir = tmp_path / "pending"
+    source_dir = _build_source_dir(tmp_path / "source")
+    bundle_dir = pending_dir / "bundle-1"
+    shutil.copytree(source_dir, bundle_dir)
+
+    result = cli_runner.invoke(
+        app,
+        [
+            "import",
+            "process-pending",
+            "--pending-dir",
+            str(pending_dir),
+            "--output-dir",
+            str(output_dir),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["processed_count"] == 1
+
+
+def test_process_pending_imports_skips_when_no_new_data(tmp_path: Path) -> None:
+    output_dir = _build_runtime_dir(tmp_path / "runtime")
+    pending_dir = tmp_path / "pending"
+
+    summary = process_pending_imports(pending_dir=pending_dir, output_dir=output_dir, min_signals=1)
+
+    assert summary["has_new_data"] is False
+    assert summary["processed_count"] == 0
+    assert pending_dir.exists()
+
+
+def test_process_pending_imports_consumes_bundle_directory(tmp_path: Path) -> None:
+    output_dir = _build_runtime_dir(tmp_path / "runtime")
+    pending_dir = tmp_path / "pending"
+    source_dir = _build_source_dir(tmp_path / "source")
+    bundle_dir = pending_dir / "bundle-1"
+    shutil.copytree(source_dir, bundle_dir)
+
+    summary = process_pending_imports(pending_dir=pending_dir, output_dir=output_dir, min_signals=1)
+
+    assert summary["has_new_data"] is True
+    assert summary["processed_count"] == 1
+    assert summary["deleted_count"] == 1
+    assert not bundle_dir.exists()
 
 
 def test_promote_imported_kols_applies_manual_author_mapping(tmp_path: Path) -> None:

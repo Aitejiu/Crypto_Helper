@@ -14,7 +14,11 @@ from crypto_helper.core.evidence_store import (
     query_trade_calls,
     search_evidence,
 )
-from crypto_helper.core.import_service import import_core_tables, promote_imported_kols
+from crypto_helper.core.import_service import (
+    import_core_tables,
+    process_pending_imports,
+    promote_imported_kols,
+)
 from crypto_helper.core.persona_service import ask_persona
 from crypto_helper.core.profile_service import get_profile, refresh_profile
 from crypto_helper.core.registry_service import (
@@ -370,6 +374,23 @@ def import_promote_kols_command(
     _emit(
         lambda: promote_imported_kols(
             source_dir=source_dir,
+            output_dir=output_dir,
+            min_signals=min_signals,
+        )
+    )
+
+
+@import_app.command("process-pending")
+def import_process_pending_command(
+    pending_dir: str | None = typer.Option(None, "--pending-dir"),
+    output_dir: str | None = typer.Option(None, "--output-dir"),
+    min_signals: int = typer.Option(1, "--min-signals"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: process_pending_imports(
+            pending_dir=pending_dir,
             output_dir=output_dir,
             min_signals=min_signals,
         )

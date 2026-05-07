@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import unicodedata
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -58,6 +59,12 @@ class CanonicalKOLMapping:
     source_authors: tuple[str, ...]
     aliases: tuple[str, ...]
     kol_id: str | None = None
+
+
+@dataclass(frozen=True)
+class PendingImportSource:
+    source_dir: Path
+    cleanup_path: Path
 
 
 @dataclass(frozen=True)
@@ -338,6 +345,56 @@ def promote_imported_kols(
     return promoted_summary
 
 
+def process_pending_imports(
+    pending_dir: str | Path | None = None,
+    output_dir: str | Path | None = None,
+    min_signals: int = 1,
+) -> dict[str, Any]:
+    data_root = (
+        Path(output_dir).expanduser().resolve() if output_dir else ensure_runtime_data().resolve()
+    )
+    pending_root = (
+        Path(pending_dir).expanduser().resolve()
+        if pending_dir
+        else (data_root / "imports" / "pending").resolve()
+    )
+    pending_root.mkdir(parents=True, exist_ok=True)
+    sources = _discover_pending_sources(pending_root)
+    summary: dict[str, Any] = {
+        "pending_dir": str(pending_root),
+        "output_dir": str(data_root),
+        "has_new_data": bool(sources),
+        "processed_count": 0,
+        "deleted_count": 0,
+        "processed_sources": [],
+        "min_signals": min_signals,
+    }
+    if not sources:
+        save_json_path(data_root / "reports" / "imports" / "pending_imports_summary.json", summary)
+        return summary
+
+    for source in sources:
+        result = promote_imported_kols(
+            source_dir=source.source_dir,
+            output_dir=data_root,
+            min_signals=min_signals,
+        )
+        _delete_processed_source(source, pending_root)
+        summary["processed_count"] += 1
+        summary["deleted_count"] += 1
+        summary["processed_sources"].append(
+            {
+                "source_dir": str(source.source_dir),
+                "cleanup_path": str(source.cleanup_path),
+                "promoted_count": result["promoted_count"],
+                "rewritten_mock_rows": result["rewritten_mock_rows"],
+            }
+        )
+
+    save_json_path(data_root / "reports" / "imports" / "pending_imports_summary.json", summary)
+    return summary
+
+
 def _load_import_rules() -> ImportRules:
     raw = json.loads(IMPORT_RULES_PATH.read_text(encoding="utf-8"))
     ignored = frozenset(str(entry).strip() for entry in raw.get("ignored_authors", []))
@@ -382,15 +439,48 @@ def _resolve_source_csv_dir(source_dir: Path) -> Path:
     )
 
 
+def _discover_pending_sources(pending_root: Path) -> list[PendingImportSource]:
+    discovered: list[PendingImportSource] = []
+    seen: set[Path] = set()
+    if _contains_required_csvs(pending_root):
+        discovered.append(PendingImportSource(source_dir=pending_root, cleanup_path=pending_root))
+        seen.add(pending_root)
+    for child in sorted(path for path in pending_root.iterdir() if path.is_dir()):
+        try:
+            source_dir = _resolve_source_csv_dir(child)
+        except DomainError:
+            continue
+        if source_dir in seen:
+            continue
+        discovered.append(PendingImportSource(source_dir=source_dir, cleanup_path=child))
+        seen.add(source_dir)
+    return discovered
+
+
 def _contains_required_csvs(path: Path) -> bool:
-    required = {
+    return all((path / filename).exists() for filename in _required_csv_filenames())
+
+
+def _delete_processed_source(source: PendingImportSource, pending_root: Path) -> None:
+    cleanup_path = source.cleanup_path
+    if cleanup_path == pending_root:
+        for filename in _required_csv_filenames():
+            file_path = pending_root / filename
+            if file_path.exists():
+                file_path.unlink()
+        return
+    if cleanup_path.exists():
+        shutil.rmtree(cleanup_path)
+
+
+def _required_csv_filenames() -> tuple[str, ...]:
+    return (
         "kol_trade_calls.csv",
         "trade_call_events.csv",
         "kol_opinions.csv",
         "market_analysis.csv",
         "market_news.csv",
-    }
-    return all((path / filename).exists() for filename in required)
+    )
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:

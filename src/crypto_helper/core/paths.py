@@ -7,6 +7,10 @@ from pathlib import Path
 DATA_ENV_VAR = "CRYPTO_HELPER_DATA_DIR"
 
 
+def get_project_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
 def get_seed_data_dir() -> Path:
     return Path(__file__).resolve().parent.parent / "data"
 
@@ -15,6 +19,10 @@ def get_data_dir() -> Path:
     override = os.getenv(DATA_ENV_VAR)
     if override:
         return Path(override).expanduser()
+    return get_project_root() / "crypto_helper_data"
+
+
+def get_legacy_home_data_dir() -> Path:
     return Path.home() / "crypto_helper_data"
 
 
@@ -22,10 +30,14 @@ def ensure_runtime_data() -> Path:
     seed_dir = get_seed_data_dir()
     data_dir = get_data_dir()
     if not data_dir.exists():
-        shutil.copytree(seed_dir, data_dir)
+        legacy_dir = get_legacy_home_data_dir()
+        if not os.getenv(DATA_ENV_VAR) and legacy_dir.exists() and legacy_dir != data_dir:
+            shutil.copytree(legacy_dir, data_dir)
+        else:
+            shutil.copytree(seed_dir, data_dir)
     else:
         _copy_missing_seed_content(seed_dir, data_dir)
-    for relative_path in ("audit", "reports", "reports/daily"):
+    for relative_path in ("audit", "reports", "reports/daily", "imports", "imports/pending"):
         (data_dir / relative_path).mkdir(parents=True, exist_ok=True)
     return data_dir
 

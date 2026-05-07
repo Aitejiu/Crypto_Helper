@@ -666,7 +666,7 @@ src/crypto_helper/data/
 Runtime data should live in:
 
 ```text
-~/crypto_helper_data/
+./crypto_helper_data/
   registry/
     kols.json
 
