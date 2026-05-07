@@ -151,6 +151,15 @@ def test_soul_apply_patch_command_runs(cli_runner: CliRunner) -> None:
     assert payload["ok"] is True
 
 
+def test_registry_lookup_handles_typo_query(cli_runner: CliRunner) -> None:
+    result = cli_runner.invoke(app, ["registry", "lookup", "--query", "AlphaTrnd", "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["entry"]["kol_id"] == "kol_a"
+    assert payload["lookup"]["matched_by"]
+
+
 @pytest.mark.parametrize(
     "args",
     [
@@ -166,3 +175,5 @@ def test_failure_commands_return_ok_false_json(cli_runner: CliRunner, args: list
     assert payload["ok"] is False
     assert payload["error"]
     assert payload["code"]
+    if payload["code"] in {"KOL_NOT_FOUND", "KOL_AMBIGUOUS_QUERY"}:
+        assert payload["metadata"]["hint"] == "查看 KOL 列表，确认具体名字。"

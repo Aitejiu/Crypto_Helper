@@ -14,6 +14,7 @@ from crypto_helper.core.evidence_store import (
     query_trade_calls,
     search_evidence,
 )
+from crypto_helper.core.import_service import import_core_tables, promote_imported_kols
 from crypto_helper.core.persona_service import ask_persona
 from crypto_helper.core.profile_service import get_profile, refresh_profile
 from crypto_helper.core.registry_service import (
@@ -22,7 +23,7 @@ from crypto_helper.core.registry_service import (
     disable_kol,
     get_active_kols,
     list_kols,
-    lookup_kol,
+    resolve_kol_query,
 )
 from crypto_helper.core.report_service import generate_daily_market_report, generate_kol_report
 from crypto_helper.core.security_review import review_text
@@ -49,6 +50,7 @@ stats_app = typer.Typer(help="Stats operations.")
 persona_app = typer.Typer(help="Persona operations.")
 report_app = typer.Typer(help="Report operations.")
 security_app = typer.Typer(help="Security operations.")
+import_app = typer.Typer(help="Data import operations.")
 
 app.add_typer(registry_app, name="registry")
 app.add_typer(soul_app, name="soul")
@@ -58,6 +60,7 @@ app.add_typer(stats_app, name="stats")
 app.add_typer(persona_app, name="persona")
 app.add_typer(report_app, name="report")
 app.add_typer(security_app, name="security")
+app.add_typer(import_app, name="import")
 
 F = TypeVar("F", bound=Callable[[], Any])
 
@@ -346,17 +349,61 @@ def security_review_command(
     _emit(lambda: review_text(text))
 
 
+@import_app.command("core-tables")
+def import_core_tables_command(
+    source_dir: str = typer.Option(..., "--source-dir"),
+    output_dir: str | None = typer.Option(None, "--output-dir"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: import_core_tables(source_dir=source_dir, output_dir=output_dir))
+
+
+@import_app.command("promote-kols")
+def import_promote_kols_command(
+    source_dir: str = typer.Option(..., "--source-dir"),
+    output_dir: str | None = typer.Option(None, "--output-dir"),
+    min_signals: int = typer.Option(1, "--min-signals"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: promote_imported_kols(
+            source_dir=source_dir,
+            output_dir=output_dir,
+            min_signals=min_signals,
+        )
+    )
+
+
 def main() -> None:
     app()
 
 
 def _lookup_payload(query: str) -> dict[str, Any]:
-    entry = lookup_kol(query)
+    resolution = resolve_kol_query(query)
+    entry = resolution["entry"]
     if entry is None:
         raise DomainError(
-            f"KOL not found: {query}", code="KOL_NOT_FOUND", metadata={"query": query}
+            f"KOL not found: {query}",
+            code="KOL_AMBIGUOUS_QUERY" if resolution["ambiguous"] else "KOL_NOT_FOUND",
+            metadata={
+                "query": query,
+                "suggestions": resolution["suggestions"],
+                "hint": resolution["hint"],
+                "list_command": resolution["list_command"],
+            },
         )
-    return {"entry": entry, "active_kols": get_active_kols()}
+    return {
+        "entry": entry,
+        "lookup": {
+            "query": query,
+            "matched_by": resolution["matched_by"],
+            "matched_value": resolution["matched_value"],
+            "confidence": resolution["confidence"],
+        },
+        "active_kols": get_active_kols(),
+    }
 
 
 def _emit(callback: F) -> None:

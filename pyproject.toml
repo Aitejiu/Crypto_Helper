@@ -28,6 +28,7 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["src/crypto_helper/data/full_structured_2026-02-28_085344"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -36,6 +37,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.11"
 strict = true
 mypy_path = "src"
+exclude = ["^src/crypto_helper/data/full_structured_2026-02-28_085344/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

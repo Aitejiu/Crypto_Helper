@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import re
+import unicodedata
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from difflib import SequenceMatcher
 from typing import Any
 
 from crypto_helper.core.data_loader import append_jsonl, load_json, save_json, save_yaml
@@ -25,6 +28,14 @@ from crypto_helper.models.soul import (
 )
 
 
+@dataclass(frozen=True)
+class KOLLookupMatch:
+    entry: KOLRegistryEntry
+    score: float
+    matched_by: str
+    matched_value: str
+
+
 def list_kols(status: str = "active") -> list[KOLRegistryEntry]:
     registry = _load_registry()
     if status == "all":
@@ -37,12 +48,56 @@ def list_kols(status: str = "active") -> list[KOLRegistryEntry]:
 
 
 def lookup_kol(query: str) -> KOLRegistryEntry | None:
-    normalized = _normalize_lookup_value(query)
-    for entry in _load_registry().kols:
-        candidates = [entry.kol_id, entry.display_name, *entry.aliases]
-        if normalized in {_normalize_lookup_value(candidate) for candidate in candidates}:
-            return entry
-    return None
+    exact = _exact_lookup(query)
+    if exact is not None:
+        return exact
+    entry = resolve_kol_query(query).get("entry")
+    return entry if isinstance(entry, KOLRegistryEntry) else None
+
+
+def resolve_kol_query(query: str, *, suggestion_limit: int = 5) -> dict[str, Any]:
+    registry = _load_registry()
+    matches = _rank_kol_matches(registry.kols, query)
+    suggestions = _suggestion_payload(matches, suggestion_limit)
+    if not matches:
+        return {
+            "query": query,
+            "entry": None,
+            "matched_by": None,
+            "matched_value": None,
+            "confidence": 0.0,
+            "ambiguous": False,
+            "suggestions": suggestions,
+            "hint": "查看 KOL 列表，确认具体名字。",
+            "list_command": "crypto-helper registry list --json",
+        }
+
+    best = matches[0]
+    auto_match = _should_auto_match(query, matches)
+    if auto_match:
+        return {
+            "query": query,
+            "entry": best.entry,
+            "matched_by": best.matched_by,
+            "matched_value": best.matched_value,
+            "confidence": round(best.score, 3),
+            "ambiguous": False,
+            "suggestions": suggestions,
+            "hint": None,
+            "list_command": None,
+        }
+
+    return {
+        "query": query,
+        "entry": None,
+        "matched_by": None,
+        "matched_value": None,
+        "confidence": round(best.score, 3),
+        "ambiguous": True,
+        "suggestions": suggestions,
+        "hint": "查看 KOL 列表，确认具体名字。",
+        "list_command": "crypto-helper registry list --json",
+    }
 
 
 def get_active_kols() -> list[KOLRegistryEntry]:
@@ -50,12 +105,26 @@ def get_active_kols() -> list[KOLRegistryEntry]:
 
 
 def require_kol(query: str) -> KOLRegistryEntry:
-    entry = lookup_kol(query)
-    if entry is None:
-        raise DomainError(
-            f"KOL not found: {query}", code="KOL_NOT_FOUND", metadata={"query": query}
+    resolution = resolve_kol_query(query)
+    entry = resolution.get("entry")
+    if isinstance(entry, KOLRegistryEntry):
+        return entry
+    suggestions = [item["display_name"] for item in resolution["suggestions"]]
+    message = f"KOL not found: {query}."
+    if suggestions:
+        message = (
+            f"KOL not found or ambiguous: {query}. Close matches: {', '.join(suggestions[:3])}."
         )
-    return entry
+    raise DomainError(
+        message,
+        code="KOL_AMBIGUOUS_QUERY" if resolution["ambiguous"] else "KOL_NOT_FOUND",
+        metadata={
+            "query": query,
+            "suggestions": suggestions,
+            "hint": resolution["hint"],
+            "list_command": resolution["list_command"],
+        },
+    )
 
 
 def add_mock_kol(
@@ -63,7 +132,7 @@ def add_mock_kol(
 ) -> dict[str, Any]:
     registry = _load_registry()
     kol_id = _slugify(display_name)
-    if lookup_kol(display_name) or lookup_kol(kol_id):
+    if _exact_lookup(display_name, registry.kols) or _exact_lookup(kol_id, registry.kols):
         raise DomainError(
             f"KOL already exists: {display_name}",
             code="KOL_ALREADY_EXISTS",
@@ -113,9 +182,10 @@ def archive_kol(kol_query: str) -> dict[str, Any]:
 
 def _update_status(kol_query: str, target: KOLStatus, action: str) -> dict[str, Any]:
     registry = _load_registry()
+    resolved = require_kol(kol_query)
     updated: KOLRegistryEntry | None = None
     for index, entry in enumerate(registry.kols):
-        if lookup_kol(kol_query) and entry.kol_id == require_kol(kol_query).kol_id:
+        if entry.kol_id == resolved.kol_id:
             updated = entry.model_copy(update={"status": target, "last_updated": _now()})
             registry.kols[index] = updated
             break
@@ -138,6 +208,128 @@ def _update_status(kol_query: str, target: KOLStatus, action: str) -> dict[str, 
 def _load_registry() -> KOLRegistry:
     raw = load_json("registry/kols.json")
     return KOLRegistry.model_validate(raw)
+
+
+def _rank_kol_matches(entries: list[KOLRegistryEntry], query: str) -> list[KOLLookupMatch]:
+    normalized_query = _normalize_lookup_value(query)
+    if not normalized_query:
+        return []
+    matches: list[KOLLookupMatch] = []
+    for entry in entries:
+        best: KOLLookupMatch | None = None
+        for source_name, candidate in _lookup_candidates(entry):
+            normalized_candidate = _normalize_lookup_value(candidate)
+            if not normalized_candidate:
+                continue
+            score, matched_by = _candidate_score(normalized_query, normalized_candidate)
+            if score <= 0:
+                continue
+            adjusted_score = min(score + _candidate_source_bonus(source_name), 1.0)
+            current = KOLLookupMatch(
+                entry=entry,
+                score=adjusted_score,
+                matched_by=matched_by
+                if source_name == "display_name"
+                else f"{matched_by}_{source_name}",
+                matched_value=candidate,
+            )
+            if best is None or current.score > best.score:
+                best = current
+        if best is not None:
+            matches.append(best)
+    matches.sort(
+        key=lambda item: (
+            -item.score,
+            item.entry.status != KOLStatus.ACTIVE,
+            item.entry.display_name.lower(),
+        )
+    )
+    return matches
+
+
+def _exact_lookup(
+    query: str,
+    entries: list[KOLRegistryEntry] | None = None,
+) -> KOLRegistryEntry | None:
+    normalized_query = _normalize_lookup_value(query)
+    if not normalized_query:
+        return None
+    for entry in entries or _load_registry().kols:
+        for _, candidate in _lookup_candidates(entry):
+            if normalized_query == _normalize_lookup_value(candidate):
+                return entry
+    return None
+
+
+def _lookup_candidates(entry: KOLRegistryEntry) -> list[tuple[str, str]]:
+    return [
+        ("display_name", entry.display_name),
+        ("kol_id", entry.kol_id),
+        *[("alias", alias) for alias in entry.aliases],
+    ]
+
+
+def _candidate_score(normalized_query: str, normalized_candidate: str) -> tuple[float, str]:
+    if normalized_query == normalized_candidate:
+        return 1.0, "exact"
+    if normalized_query in normalized_candidate:
+        if len(normalized_query) < 3:
+            return 0.0, "none"
+        ratio = len(normalized_query) / max(len(normalized_candidate), 1)
+        return min(0.84 + ratio * 0.16, 0.97), "substring"
+    if normalized_candidate in normalized_query:
+        if len(normalized_candidate) < 4:
+            return 0.0, "none"
+        ratio = len(normalized_candidate) / max(len(normalized_query), 1)
+        if ratio < 0.45:
+            return 0.0, "none"
+        return min(0.78 + ratio * 0.12, 0.9), "superstring"
+    score = SequenceMatcher(None, normalized_query, normalized_candidate).ratio()
+    if score < 0.62:
+        return 0.0, "none"
+    return score, "fuzzy"
+
+
+def _candidate_source_bonus(source_name: str) -> float:
+    if source_name == "display_name":
+        return 0.03
+    if source_name == "alias":
+        return 0.015
+    return 0.0
+
+
+def _should_auto_match(query: str, matches: list[KOLLookupMatch]) -> bool:
+    if not matches:
+        return False
+    normalized_query = _normalize_lookup_value(query)
+    best = matches[0]
+    if best.score >= 0.995:
+        return True
+    second_score = matches[1].score if len(matches) > 1 else 0.0
+    margin = best.score - second_score
+    if best.score >= 0.91 and margin >= 0.07 and len(normalized_query) >= 4:
+        return True
+    return best.score >= 0.87 and margin >= 0.12 and len(normalized_query) >= 6
+
+
+def _suggestion_payload(matches: list[KOLLookupMatch], limit: int) -> list[dict[str, Any]]:
+    suggestions: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for match in matches:
+        if match.entry.kol_id in seen or match.score < 0.6:
+            continue
+        seen.add(match.entry.kol_id)
+        suggestions.append(
+            {
+                "kol_id": match.entry.kol_id,
+                "display_name": match.entry.display_name,
+                "status": match.entry.status,
+                "score": round(match.score, 3),
+            }
+        )
+        if len(suggestions) >= limit:
+            break
+    return suggestions
 
 
 def _write_default_kol_files(entry: KOLRegistryEntry) -> None:
@@ -184,7 +376,8 @@ def _write_default_kol_files(entry: KOLRegistryEntry) -> None:
 
 
 def _normalize_lookup_value(value: str) -> str:
-    return re.sub(r"[\s_\-]+", "", value).lower()
+    normalized = unicodedata.normalize("NFKC", value).strip().lower()
+    return "".join(char for char in normalized if char.isalnum())
 
 
 def _slugify(display_name: str) -> str:

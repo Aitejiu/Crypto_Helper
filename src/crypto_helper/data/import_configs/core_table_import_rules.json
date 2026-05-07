@@ -1,0 +1,21 @@
+{
+  "ignored_authors": [
+    "Unknown",
+    "qa-bot",
+    "E2EManual",
+    "ManualTest",
+    "block-link-check",
+    "dedup-check",
+    "regression",
+    "dup-regression",
+    "dup-regression-2",
+    "dup-regression-4"
+  ],
+  "quote_assets": [
+    "USDT",
+    "USD",
+    "USDC",
+    "FDUSD",
+    "BUSD"
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "canonical_kols": [
+    {
+      "display_name": "舒琴",
+      "kol_id": "kol_shuqin",
+      "aliases": ["舒琴操作日记VIP分享"],
+      "source_authors": ["舒琴操作日记VIP分享"]
+    },
+    {
+      "display_name": "所长",
+      "kol_id": "kol_suozhang",
+      "aliases": ["所长（VIP策略）气运加身"],
+      "source_authors": ["所长（VIP策略）气运加身"]
+    },
+    {
+      "display_name": "三马哥合约",
+      "kol_id": "kol_sanmage",
+      "aliases": ["三马哥合约VIP", "三马哥合约VIP（置顶策略有效）"],
+      "source_authors": ["三马哥合约", "三马哥合约VIP（置顶策略有效）"]
+    },
+    {
+      "display_name": "比特币峰哥",
+      "kol_id": "kol_bitcoin_fengge",
+      "aliases": ["峰哥", "峰哥会员频道", "「峰哥」会员频道"],
+      "source_authors": ["比特币峰哥", "「峰哥」会员频道"]
+    },
+    {
+      "display_name": "Owais",
+      "kol_id": "kol_owais",
+      "aliases": ["Owais | Top Tier 👑"],
+      "source_authors": ["Owais", "Owais | Top Tier 👑"]
+    },
+    {
+      "display_name": "Nihilus",
+      "kol_id": "kol_nihilus",
+      "aliases": ["nihilusbtc"],
+      "source_authors": ["Nihilus", "nihilusbtc"]
+    },
+    {
+      "display_name": "江华",
+      "kol_id": "kol_jianghua",
+      "aliases": ["江华（等待）（市场能让你冲动的，也会让别人冲动）"],
+      "source_authors": ["江华", "江华（等待）（市场能让你冲动的，也会让别人冲动）"]
+    },
+    {
+      "display_name": "飞扬高级会员群",
+      "kol_id": "kol_feiyang_vip",
+      "aliases": ["🏦飞扬高级会员群🏪"],
+      "source_authors": ["飞扬高级会员群", "🏦飞扬高级会员群🏪"]
+    },
+    {
+      "display_name": "必到哥",
+      "kol_id": "kol_bidage",
+      "aliases": ["必到哥 共振交易PRO禁言群"],
+      "source_authors": ["必到哥 共振交易PRO禁言群"]
+    },
+    {
+      "display_name": "坚果TV",
+      "kol_id": "kol_jianguo_tv",
+      "aliases": ["坚果TV警报提醒🚨"],
+      "source_authors": ["坚果TV警报提醒🚨"]
+    },
+    {
+      "display_name": "CPO",
+      "kol_id": "kol_cpo",
+      "aliases": ["《CPO》獨家策略群組"],
+      "source_authors": ["《CPO》獨家策略群組"]
+    },
+    {
+      "display_name": "KING precious",
+      "kol_id": "kol_king_precious",
+      "aliases": ["𝐊𝐈𝐍𝐆 precious | Top Tier 👑"],
+      "source_authors": ["𝐊𝐈𝐍𝐆 precious | Top Tier 👑"]
+    },
+    {
+      "display_name": "华家军-小军师",
+      "kol_id": "kol_xiaojunshi",
+      "aliases": ["小军师"],
+      "source_authors": ["华家军-小军师"]
+    },
+    {
+      "display_name": "CIA-教主",
+      "kol_id": "kol_cia",
+      "aliases": ["教主"],
+      "source_authors": ["CIA-教主"]
+    },
+    {
+      "display_name": "Dr. Profit Vip 🚀",
+      "kol_id": "kol_dr_profit_vip",
+      "aliases": ["Dr. Profit Vip", "Dr Profit Vip"],
+      "source_authors": ["Dr. Profit Vip 🚀"]
+    }
+  ]
+}

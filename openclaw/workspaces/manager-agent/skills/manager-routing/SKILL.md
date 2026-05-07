@@ -40,19 +40,21 @@ Use this skill when:
 2. All high-risk requests must call `crypto_helper_security_review` first.
 3. All requests involving a KOL must call `crypto_helper_registry_lookup` first.
 4. Never invent a KOL that is not found in the registry.
-5. Never treat each KOL as a dedicated OpenClaw agent.
-6. Both Core KOL and Dynamic KOL persona flows are handled by `persona-runtime-agent`.
-7. If a KOL does not exist, do not call `persona-runtime-agent`.
-8. Disabled KOLs do not allow persona simulation.
-9. Archived KOLs allow historical analysis only, and that archived status must be stated.
-10. Persona QA delegates to `persona-runtime-agent`.
-11. KOL weekly reports and market daily reports delegate to `report-agent`.
-12. High-risk refusal or downgrade flows delegate to `security-agent`.
-13. Simple stats queries can be handled directly by `manager-agent` with `stats-query` and stats tools.
-14. Complex stats queries may delegate to `report-agent`, with future extension to `stats-agent`.
-15. Workflow 12-16 must not run through `manager-agent`.
-16. `manager-agent` must reply with no permission for workflow 12-16 requests.
-17. `manager-admin` may handle workflow 12-16 only through trusted private admin context.
+5. If lookup resolves a typo or fuzzy name with high confidence, continue using the canonical registry display name.
+6. If lookup is ambiguous or fails, stop and ask the user to inspect the KOL list for the exact name.
+7. Never treat each KOL as a dedicated OpenClaw agent.
+8. Both Core KOL and Dynamic KOL persona flows are handled by `persona-runtime-agent`.
+9. If a KOL does not exist, do not call `persona-runtime-agent`.
+10. Disabled KOLs do not allow persona simulation.
+11. Archived KOLs allow historical analysis only, and that archived status must be stated.
+12. Persona QA delegates to `persona-runtime-agent`.
+13. KOL weekly reports and market daily reports delegate to `report-agent`.
+14. High-risk refusal or downgrade flows delegate to `security-agent`.
+15. Simple stats queries can be handled directly by `manager-agent` with `stats-query` and stats tools.
+16. Complex stats queries may delegate to `report-agent`, with future extension to `stats-agent`.
+17. Workflow 12-16 must not run through `manager-agent`.
+18. `manager-agent` must reply with no permission for workflow 12-16 requests.
+19. `manager-admin` may handle workflow 12-16 only through trusted private admin context.
 
 ### Workflow 0: List KOLs
 
@@ -102,9 +104,9 @@ Use this skill when:
 - Required tools:
   `crypto_helper_registry_lookup`
 - Expected behavior:
-  Tell the user the KOL is not tracked and stop
+  If there is no safe single match, tell the user the KOL is not tracked, include close matches when available, and ask the user to inspect the KOL list for the exact name
 - Refusal / limitation behavior:
-  No persona simulation, no report generation, and no invented profile
+  No persona simulation, no report generation, and no fallback to a guessed KOL
 
 ### Workflow 4: Disabled KOL
 

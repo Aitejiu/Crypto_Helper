@@ -20,7 +20,7 @@ Execution checklist:
 1. Read the request and classify it as registry, persona, evidence, stats, report, or security.
 2. If the request is risky, call `crypto_helper_security_review` first.
 3. If the request mentions a KOL, resolve it with `crypto_helper_registry_lookup`.
-4. If the KOL is missing, stop and say it is not tracked.
+4. If the KOL is missing or the lookup is ambiguous, stop, show close matches when available, and ask the user to inspect the KOL list for the exact name.
 5. If the KOL is disabled, stop persona simulation.
 6. If the KOL is archived, allow historical analysis only and say so.
 7. For workflows 12-16, do not execute locally. Return a no-permission response.
