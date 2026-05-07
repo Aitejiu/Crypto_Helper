@@ -50,6 +50,9 @@ Use this skill when:
 12. High-risk refusal or downgrade flows delegate to `security-agent`.
 13. Simple stats queries can be handled directly by `manager-agent` with `stats-query` and stats tools.
 14. Complex stats queries may delegate to `report-agent`, with future extension to `stats-agent`.
+15. Workflow 12-16 must not run through `manager-agent`.
+16. `manager-agent` must reply with no permission for workflow 12-16 requests.
+17. `manager-admin` may handle workflow 12-16 only through trusted private admin context.
 
 ### Workflow 0: List KOLs
 
@@ -214,11 +217,11 @@ Use this skill when:
 - Required agent:
   `manager-agent`
 - Required tools:
-  `crypto_helper_security_review`, `crypto_helper_registry_add_mock`
+  `crypto_helper_security_review`
 - Expected behavior:
-  Create a dynamic mock KOL entry and explain the new status
+  `manager-agent` returns a no-permission response and does not execute the workflow; `manager-admin` may handle the request in trusted private admin context
 - Refusal / limitation behavior:
-  If the request contains unsafe identity or permission language, deny first
+  Refuse from group chat or from `manager-agent` private chat and do not expose alternate routing
 
 ### Workflow 13: Disable KOL
 
@@ -227,11 +230,11 @@ Use this skill when:
 - Required agent:
   `manager-agent`
 - Required tools:
-  `crypto_helper_registry_disable_mock`
+  `crypto_helper_security_review`
 - Expected behavior:
-  Disable the KOL and report the new status
+  `manager-agent` returns a no-permission response and does not execute the workflow; `manager-admin` may handle the request in trusted private admin context
 - Refusal / limitation behavior:
-  Do not delete history
+  Refuse from group chat or from `manager-agent` private chat and do not expose alternate routing
 
 ### Workflow 14: Archive KOL
 
@@ -240,11 +243,11 @@ Use this skill when:
 - Required agent:
   `manager-agent`
 - Required tools:
-  `crypto_helper_registry_archive_mock`
+  `crypto_helper_security_review`
 - Expected behavior:
-  Archive the KOL and preserve history
+  `manager-agent` returns a no-permission response and does not execute the workflow; `manager-admin` may handle the request in trusted private admin context
 - Refusal / limitation behavior:
-  Do not hard-delete the KOL
+  Refuse from group chat or from `manager-agent` private chat and do not expose alternate routing
 
 ### Workflow 15: Refresh KOL Profile
 
@@ -253,11 +256,11 @@ Use this skill when:
 - Required agent:
   `manager-agent`
 - Required tools:
-  `crypto_helper_registry_lookup`, plus `kol-profile-builder` workflow
+  `crypto_helper_security_review`
 - Expected behavior:
-  Route into profile refresh logic grounded in recent evidence
+  `manager-agent` returns a no-permission response and does not execute the workflow; `manager-admin` may handle the request in trusted private admin context
 - Refusal / limitation behavior:
-  Disabled KOLs should not be actively refreshed; archived KOLs are historical only
+  Refuse from group chat or from `manager-agent` private chat and do not expose alternate routing
 
 ### Workflow 16: Update KOL SOUL
 
@@ -266,11 +269,11 @@ Use this skill when:
 - Required agent:
   `manager-agent`
 - Required tools:
-  `crypto_helper_registry_lookup`, plus `kol-soul-maintenance` workflow
+  `crypto_helper_security_review`
 - Expected behavior:
-  Generate an evidence-backed SoulPatch and apply only when allowed
+  `manager-agent` returns a no-permission response and does not execute the workflow; `manager-admin` may handle the request in trusted private admin context
 - Refusal / limitation behavior:
-  Low-confidence patches require review; identity boundary weakening is never allowed
+  Refuse from group chat or from `manager-agent` private chat and do not expose alternate routing
 
 ### Workflow 17: Explain Evidence
 

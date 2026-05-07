@@ -77,6 +77,7 @@ The final setup must include:
 Create these real OpenClaw agents:
 
 - `manager-agent`
+- `manager-admin`
 - `persona-runtime-agent`
 - `report-agent`
 - `security-agent`
@@ -126,6 +127,13 @@ openclaw/workspaces/manager-agent/skills/
   manager-routing/
   registry-management/
   stats-query/
+  security-guard/
+
+openclaw/workspaces/manager-admin/skills/
+  registry-management/
+  evidence-retrieval/
+  kol-profile-builder/
+  kol-soul-maintenance/
   security-guard/
 
 openclaw/workspaces/persona-runtime-agent/skills/
@@ -333,6 +341,7 @@ Required workspace paths:
 
 ```text
 openclaw/workspaces/manager-agent
+openclaw/workspaces/manager-admin
 openclaw/workspaces/persona-runtime-agent
 openclaw/workspaces/report-agent
 openclaw/workspaces/security-agent
@@ -366,6 +375,7 @@ Codex must create these real OpenClaw agents:
 
 ```text
 manager-agent
+manager-admin
 persona-runtime-agent
 report-agent
 security-agent
@@ -380,6 +390,10 @@ When creating OpenClaw agents, use absolute paths pointing to the repository-man
 ```bash
 openclaw agents add manager-agent \
   --workspace "$(pwd)/openclaw/workspaces/manager-agent" \
+  --non-interactive
+
+openclaw agents add manager-admin \
+  --workspace "$(pwd)/openclaw/workspaces/manager-admin" \
   --non-interactive
 
 openclaw agents add persona-runtime-agent \
@@ -399,6 +413,7 @@ Forbidden workspace paths:
 
 ```text
 ~/.openclaw/workspaces/crypto_helper/manager-agent
+~/.openclaw/workspaces/crypto_helper/manager-admin
 ~/.openclaw/workspaces/crypto_helper/persona-runtime-agent
 ~/.openclaw/workspaces/crypto_helper/report-agent
 ~/.openclaw/workspaces/crypto_helper/security-agent
@@ -446,6 +461,35 @@ Responsibilities:
 - delegate reports to `report-agent`
 - delegate high-risk refusal / safe rewrite to `security-agent`
 - handle simple stats and registry workflows directly
+- deny workflows 12-16 as unauthorized
+- behave as the user-facing Crypto resource analysis assistant
+
+### manager-admin
+
+Workspace:
+
+```text
+openclaw/workspaces/manager-admin/
+```
+
+Required skills:
+
+```text
+registry-management
+evidence-retrieval
+kol-profile-builder
+kol-soul-maintenance
+security-guard
+```
+
+Responsibilities:
+
+- act as the backend administrative assistant
+- handle privileged maintenance operations
+- own workflows 12-16
+- require private admin chat context
+- require security review before state-changing actions
+- avoid exposing admin-only operations on public entrypoints
 
 ### persona-runtime-agent
 
@@ -556,6 +600,8 @@ openclaw agents bind --agent manager-agent --bind discord:default
 openclaw agents bind --agent manager-agent --bind telegram:default
 ```
 
+If a dedicated admin binding already exists, bind it to `manager-admin`.
+
 If binding names are ambiguous, Codex must stop and ask for confirmation.
 
 Do not bind public Discord / Telegram traffic directly to:
@@ -570,6 +616,12 @@ The public entrypoint must be:
 
 ```text
 manager-agent
+```
+
+The backend administrative entrypoint, when a dedicated admin binding exists, must be:
+
+```text
+manager-admin
 ```
 
 ---
@@ -838,9 +890,12 @@ Input:
 
 Expected:
 
+- only allow in private admin chat
+- handled by `manager-admin`
 - security review
 - call `crypto_helper_registry_add_mock`
 - create dynamic KOL
+- `@manager-agent` public or private requests must refuse as unauthorized
 
 ---
 
@@ -854,7 +909,10 @@ Input:
 
 Expected:
 
+- only allow in private admin chat
+- handled by `manager-admin`
 - call `crypto_helper_registry_disable_mock`
+- `@manager-agent` public or private requests must refuse as unauthorized
 
 ---
 
@@ -868,8 +926,11 @@ Input:
 
 Expected:
 
+- only allow in private admin chat
+- handled by `manager-admin`
 - call `crypto_helper_registry_archive_mock`
 - preserve history
+- `@manager-agent` public or private requests must refuse as unauthorized
 
 ---
 
@@ -883,9 +944,12 @@ Input:
 
 Expected:
 
+- only allow in private admin chat
+- handled by `manager-admin`
 - use kol-profile-builder skill
 - query trade calls, events, opinions, evidence
 - update mock profile
+- `@manager-agent` public or private requests must refuse as unauthorized
 
 ---
 
@@ -899,9 +963,12 @@ Input:
 
 Expected:
 
+- only allow in private admin chat
+- handled by `manager-admin`
 - use kol-soul-maintenance skill
 - generate evidence-backed SoulPatch
 - low-confidence patch requires review
+- `@manager-agent` public or private requests must refuse as unauthorized
 
 ---
 
@@ -975,6 +1042,11 @@ Reject or downgrade requests asking for:
 - fabricating evidence
 - fabricating missing KOLs
 
+Administrative restriction:
+
+- workflows 12-16 must not run through `manager-agent`
+- workflows 12-16 may run only through `manager-admin` in private admin chat
+
 ---
 
 ## Workspace Verification
@@ -991,6 +1063,9 @@ The following files must exist:
 ```text
 openclaw/workspaces/manager-agent/SOUL.md
 openclaw/workspaces/manager-agent/AGENTS.md
+
+openclaw/workspaces/manager-admin/SOUL.md
+openclaw/workspaces/manager-admin/AGENTS.md
 
 openclaw/workspaces/persona-runtime-agent/SOUL.md
 openclaw/workspaces/persona-runtime-agent/AGENTS.md
