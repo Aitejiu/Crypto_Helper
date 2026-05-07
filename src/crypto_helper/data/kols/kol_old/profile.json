@@ -1,0 +1,10 @@
+{
+  "kol_id": "kol_old",
+  "summary": "KOL_OLD is archived and only supports historical analysis of prior BTC behavior.",
+  "active_symbols": ["BTC"],
+  "trade_style": ["historical_breakout_bias", "lower_frequency"],
+  "reliability": 0.52,
+  "evidence_strength": 1,
+  "last_refreshed": "2026-04-20T08:00:00+00:00",
+  "limitations": ["Archived KOL; historical analysis only."]
+}

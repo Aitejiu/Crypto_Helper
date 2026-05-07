@@ -1,0 +1,52 @@
+[
+  {
+    "id": "news_sol_1",
+    "evidence_id": "news_ev_sol_1",
+    "symbol": "SOL",
+    "importance": "high",
+    "timestamp": "2026-05-07T00:30:00+00:00",
+    "channel_scope": "public_news",
+    "summary": "SOL ecosystem upgrade drives strong trading interest across major desks.",
+    "confidence": 0.88
+  },
+  {
+    "id": "news_sol_2",
+    "evidence_id": "news_ev_sol_2",
+    "symbol": "SOL",
+    "importance": "medium",
+    "timestamp": "2026-05-06T20:00:00+00:00",
+    "channel_scope": "public_news",
+    "summary": "SOL derivatives open interest rises after strong breakout follow through.",
+    "confidence": 0.81
+  },
+  {
+    "id": "news_btc_1",
+    "evidence_id": "news_ev_btc_1",
+    "symbol": "BTC",
+    "importance": "high",
+    "timestamp": "2026-05-06T12:00:00+00:00",
+    "channel_scope": "public_news",
+    "summary": "BTC volatility expands near key support, increasing focus on invalidation and reclaim levels.",
+    "confidence": 0.86
+  },
+  {
+    "id": "news_eth_1",
+    "evidence_id": "news_ev_eth_1",
+    "symbol": "ETH",
+    "importance": "medium",
+    "timestamp": "2026-05-05T13:00:00+00:00",
+    "channel_scope": "public_news",
+    "summary": "ETH rotation remains active as traders monitor reclaim-based continuation setups.",
+    "confidence": 0.78
+  },
+  {
+    "id": "news_macro_1",
+    "evidence_id": "news_ev_macro_1",
+    "symbol": "BTC",
+    "importance": "medium",
+    "timestamp": "2026-05-04T06:00:00+00:00",
+    "channel_scope": "public_news",
+    "summary": "Broader macro risk keeps traders cautious despite trend-following interest.",
+    "confidence": 0.74
+  }
+]

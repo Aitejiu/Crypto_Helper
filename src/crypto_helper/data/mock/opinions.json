@@ -1,0 +1,68 @@
+[
+  {
+    "id": "op_kol_a_btc_1",
+    "evidence_id": "op_ev_kol_a_1",
+    "kol_id": "kol_a",
+    "symbol": "BTC",
+    "sentiment": "conditional_bullish",
+    "timestamp": "2026-05-06T10:45:00+00:00",
+    "channel_scope": "discord_group",
+    "summary": "KOL_A stays constructive on BTC only if reclaim holds and invalidation remains intact.",
+    "confidence": 0.85
+  },
+  {
+    "id": "op_kol_a_eth_1",
+    "evidence_id": "op_ev_kol_a_2",
+    "kol_id": "kol_a",
+    "symbol": "ETH",
+    "sentiment": "neutral_bullish",
+    "timestamp": "2026-05-04T07:30:00+00:00",
+    "channel_scope": "telegram_group",
+    "summary": "KOL_A frames ETH as constructive after reclaim, but only with clear invalidation.",
+    "confidence": 0.8
+  },
+  {
+    "id": "op_kol_b_sol_1",
+    "evidence_id": "op_ev_kol_b_1",
+    "kol_id": "kol_b",
+    "symbol": "SOL",
+    "sentiment": "bullish",
+    "timestamp": "2026-05-07T02:00:00+00:00",
+    "channel_scope": "discord_group",
+    "summary": "KOL_B is aggressively bullish on SOL momentum and rotates quickly if strength persists.",
+    "confidence": 0.76
+  },
+  {
+    "id": "op_kol_b_eth_1",
+    "evidence_id": "op_ev_kol_b_2",
+    "kol_id": "kol_b",
+    "symbol": "ETH",
+    "sentiment": "bullish",
+    "timestamp": "2026-05-05T15:00:00+00:00",
+    "channel_scope": "telegram_group",
+    "summary": "KOL_B expects ETH scalp continuation but accepts high short-term risk.",
+    "confidence": 0.65
+  },
+  {
+    "id": "op_kol_x_btc_1",
+    "evidence_id": "op_ev_kol_x_1",
+    "kol_id": "kol_x",
+    "symbol": "BTC",
+    "sentiment": "uncertain",
+    "timestamp": "2026-05-05T08:10:00+00:00",
+    "channel_scope": "telegram_group",
+    "summary": "KOL_X has limited BTC history and keeps the stance tentative.",
+    "confidence": 0.45
+  },
+  {
+    "id": "op_kol_old_btc_1",
+    "evidence_id": "op_ev_kol_old_1",
+    "kol_id": "kol_old",
+    "symbol": "BTC",
+    "sentiment": "historical_bullish",
+    "timestamp": "2026-04-18T10:30:00+00:00",
+    "channel_scope": "archive_snapshot",
+    "summary": "KOL_OLD historically leaned bullish only after patient retest confirmation.",
+    "confidence": 0.56
+  }
+]

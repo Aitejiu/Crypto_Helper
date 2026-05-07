@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "evidence_id": "ev_kol_x_01",
+      "source_type": "note",
+      "source_id": "src_kol_x_01",
+      "kol_id": "kol_x",
+      "symbol": "BTC",
+      "timestamp": "2026-05-05T08:00:00+00:00",
+      "channel_scope": "telegram_group",
+      "summary": "Sparse BTC evidence suggests a preference for waiting before reacting to volatility.",
+      "confidence": 0.49
+    },
+    {
+      "evidence_id": "ev_kol_x_02",
+      "source_type": "note",
+      "source_id": "src_kol_x_02",
+      "kol_id": "kol_x",
+      "symbol": "BTC",
+      "timestamp": "2026-04-29T08:00:00+00:00",
+      "channel_scope": "discord_group",
+      "summary": "One archived-style note mentions invalidation but with low conviction and sparse follow-up.",
+      "confidence": 0.46
+    }
+  ]
+}

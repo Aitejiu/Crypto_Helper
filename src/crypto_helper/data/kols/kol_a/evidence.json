@@ -1,0 +1,70 @@
+{
+  "items": [
+    {
+      "evidence_id": "ev_kol_a_01",
+      "source_type": "note",
+      "source_id": "src_kol_a_01",
+      "kol_id": "kol_a",
+      "symbol": "BTC",
+      "timestamp": "2026-05-06T11:00:00+00:00",
+      "channel_scope": "discord_group",
+      "summary": "BTC note stresses invalidation under local support before any new long exposure.",
+      "confidence": 0.88
+    },
+    {
+      "evidence_id": "ev_kol_a_02",
+      "source_type": "note",
+      "source_id": "src_kol_a_02",
+      "kol_id": "kol_a",
+      "symbol": "BTC",
+      "timestamp": "2026-05-05T10:30:00+00:00",
+      "channel_scope": "telegram_group",
+      "summary": "Prefers waiting for BTC reclaim after a breakdown rather than chasing first reaction candles.",
+      "confidence": 0.84
+    },
+    {
+      "evidence_id": "ev_kol_a_03",
+      "source_type": "note",
+      "source_id": "src_kol_a_03",
+      "kol_id": "kol_a",
+      "symbol": "ETH",
+      "timestamp": "2026-05-04T08:20:00+00:00",
+      "channel_scope": "discord_group",
+      "summary": "ETH plan mentions taking partial TP into strength and moving the stop to breakeven.",
+      "confidence": 0.82
+    },
+    {
+      "evidence_id": "ev_kol_a_04",
+      "source_type": "note",
+      "source_id": "src_kol_a_04",
+      "kol_id": "kol_a",
+      "symbol": "BTC",
+      "timestamp": "2026-05-03T13:45:00+00:00",
+      "channel_scope": "public_channel",
+      "summary": "Trend-following bias stays intact only while BTC respects the invalidation line.",
+      "confidence": 0.86
+    },
+    {
+      "evidence_id": "ev_kol_a_05",
+      "source_type": "note",
+      "source_id": "src_kol_a_05",
+      "kol_id": "kol_a",
+      "symbol": "ETH",
+      "timestamp": "2026-04-28T09:10:00+00:00",
+      "channel_scope": "telegram_group",
+      "summary": "ETH commentary remains patient until reclaim confirms trend continuation.",
+      "confidence": 0.79
+    },
+    {
+      "evidence_id": "ev_kol_a_06",
+      "source_type": "note",
+      "source_id": "src_kol_a_06",
+      "kol_id": "kol_a",
+      "symbol": "BTC",
+      "timestamp": "2026-04-25T07:00:00+00:00",
+      "channel_scope": "discord_group",
+      "summary": "Repeatedly references invalidation before upside targets and trims risk after first target hits.",
+      "confidence": 0.83
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "kol_id": "kol_x",
+  "summary": "KOL_X is a dynamic runtime-only profile with limited BTC evidence and lower confidence.",
+  "active_symbols": ["BTC"],
+  "trade_style": ["sparse_evidence", "wait_for_confirmation"],
+  "reliability": 0.44,
+  "evidence_strength": 2,
+  "last_refreshed": "2026-05-05T09:00:00+00:00",
+  "limitations": ["Evidence base is thin for this dynamic KOL."]
+}

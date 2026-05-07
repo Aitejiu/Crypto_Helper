@@ -1,0 +1,10 @@
+{
+  "kol_id": "kol_disabled",
+  "summary": "KOL_DISABLED is retained in the registry but unavailable for active persona simulation.",
+  "active_symbols": ["BTC"],
+  "trade_style": ["disabled_profile"],
+  "reliability": 0.3,
+  "evidence_strength": 1,
+  "last_refreshed": "2026-05-01T10:00:00+00:00",
+  "limitations": ["Disabled KOL."]
+}

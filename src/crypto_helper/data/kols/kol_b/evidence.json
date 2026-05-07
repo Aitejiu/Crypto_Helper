@@ -1,0 +1,48 @@
+{
+  "items": [
+    {
+      "evidence_id": "ev_kol_b_01",
+      "source_type": "note",
+      "source_id": "src_kol_b_01",
+      "kol_id": "kol_b",
+      "symbol": "SOL",
+      "timestamp": "2026-05-06T15:00:00+00:00",
+      "channel_scope": "discord_group",
+      "summary": "SOL note shows willingness to chase momentum earlier than most peers.",
+      "confidence": 0.73
+    },
+    {
+      "evidence_id": "ev_kol_b_02",
+      "source_type": "note",
+      "source_id": "src_kol_b_02",
+      "kol_id": "kol_b",
+      "symbol": "ETH",
+      "timestamp": "2026-05-05T14:30:00+00:00",
+      "channel_scope": "telegram_group",
+      "summary": "ETH commentary favors short-term rotation and higher tolerance for drawdown.",
+      "confidence": 0.68
+    },
+    {
+      "evidence_id": "ev_kol_b_03",
+      "source_type": "note",
+      "source_id": "src_kol_b_03",
+      "kol_id": "kol_b",
+      "symbol": "SOL",
+      "timestamp": "2026-05-03T16:00:00+00:00",
+      "channel_scope": "public_channel",
+      "summary": "Prefers fast continuation trades and accepts wider risk when momentum is strong.",
+      "confidence": 0.7
+    },
+    {
+      "evidence_id": "ev_kol_b_04",
+      "source_type": "note",
+      "source_id": "src_kol_b_04",
+      "kol_id": "kol_b",
+      "symbol": "ETH",
+      "timestamp": "2026-04-30T18:20:00+00:00",
+      "channel_scope": "discord_group",
+      "summary": "More aggressive on short timeframes and willing to rotate quickly after scalp exits.",
+      "confidence": 0.66
+    }
+  ]
+}

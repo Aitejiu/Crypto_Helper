@@ -1,0 +1,10 @@
+{
+  "kol_id": "kol_b",
+  "summary": "KOL_B is more aggressive, trades shorter term rotations, and tolerates higher risk on SOL and ETH.",
+  "active_symbols": ["SOL", "ETH"],
+  "trade_style": ["aggressive_momentum", "shorter_term_rotation", "high_risk_tolerance"],
+  "reliability": 0.63,
+  "evidence_strength": 4,
+  "last_refreshed": "2026-05-06T12:30:00+00:00",
+  "limitations": []
+}

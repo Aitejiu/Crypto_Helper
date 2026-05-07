@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "evidence_id": "ev_kol_old_01",
+      "source_type": "note",
+      "source_id": "src_kol_old_01",
+      "kol_id": "kol_old",
+      "symbol": "BTC",
+      "timestamp": "2026-04-18T11:00:00+00:00",
+      "channel_scope": "archive_snapshot",
+      "summary": "Historical BTC note shows slower breakout bias and retrospective framing.",
+      "confidence": 0.57
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "evidence_id": "ev_kol_disabled_01",
+      "source_type": "note",
+      "source_id": "src_kol_disabled_01",
+      "kol_id": "kol_disabled",
+      "symbol": "BTC",
+      "timestamp": "2026-05-01T09:30:00+00:00",
+      "channel_scope": "archive_snapshot",
+      "summary": "Administrative archive entry only; no active simulation allowed.",
+      "confidence": 0.4
+    }
+  ]
+}

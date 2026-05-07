@@ -1,0 +1,74 @@
+{
+  "kols": [
+    {
+      "kol_id": "kol_a",
+      "display_name": "KOL_A",
+      "aliases": ["AlphaTrend", "A"],
+      "status": "active",
+      "tier": "core",
+      "persona_mode": "dedicated_or_runtime",
+      "soul_path": "kols/kol_a/soul.yaml",
+      "profile_path": "kols/kol_a/profile.json",
+      "evidence_path": "kols/kol_a/evidence.json",
+      "allowed_symbols": ["BTC", "ETH"],
+      "risk_level": "medium",
+      "last_updated": "2026-05-06T12:00:00+00:00"
+    },
+    {
+      "kol_id": "kol_b",
+      "display_name": "KOL_B",
+      "aliases": ["BetaScalp", "B"],
+      "status": "active",
+      "tier": "core",
+      "persona_mode": "dedicated_or_runtime",
+      "soul_path": "kols/kol_b/soul.yaml",
+      "profile_path": "kols/kol_b/profile.json",
+      "evidence_path": "kols/kol_b/evidence.json",
+      "allowed_symbols": ["SOL", "ETH"],
+      "risk_level": "high",
+      "last_updated": "2026-05-06T12:30:00+00:00"
+    },
+    {
+      "kol_id": "kol_x",
+      "display_name": "KOL_X",
+      "aliases": ["XWatcher"],
+      "status": "active",
+      "tier": "dynamic",
+      "persona_mode": "runtime_only",
+      "soul_path": "kols/kol_x/soul.yaml",
+      "profile_path": "kols/kol_x/profile.json",
+      "evidence_path": "kols/kol_x/evidence.json",
+      "allowed_symbols": ["BTC"],
+      "risk_level": "unknown",
+      "last_updated": "2026-05-05T09:00:00+00:00"
+    },
+    {
+      "kol_id": "kol_disabled",
+      "display_name": "KOL_DISABLED",
+      "aliases": ["DisabledWatch"],
+      "status": "disabled",
+      "tier": "dynamic",
+      "persona_mode": "runtime_only",
+      "soul_path": "kols/kol_disabled/soul.yaml",
+      "profile_path": "kols/kol_disabled/profile.json",
+      "evidence_path": "kols/kol_disabled/evidence.json",
+      "allowed_symbols": ["BTC"],
+      "risk_level": "unknown",
+      "last_updated": "2026-05-01T10:00:00+00:00"
+    },
+    {
+      "kol_id": "kol_old",
+      "display_name": "KOL_OLD",
+      "aliases": ["OldTimer"],
+      "status": "archived",
+      "tier": "dynamic",
+      "persona_mode": "runtime_only",
+      "soul_path": "kols/kol_old/soul.yaml",
+      "profile_path": "kols/kol_old/profile.json",
+      "evidence_path": "kols/kol_old/evidence.json",
+      "allowed_symbols": ["BTC"],
+      "risk_level": "unknown",
+      "last_updated": "2026-04-20T08:00:00+00:00"
+    }
+  ]
+}
