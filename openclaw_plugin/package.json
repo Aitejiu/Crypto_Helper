@@ -1,0 +1,48 @@
+{
+  "name": "crypto-helper-tools",
+  "version": "0.1.0",
+  "description": "OpenClaw native plugin exposing crypto_helper Python CLI tools.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist/**",
+    "openclaw.plugin.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "openclaw": "2026.5.4",
+    "typebox": "1.1.37"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.5.4"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.5.4"
+    },
+    "build": {
+      "openclawVersion": "2026.5.4"
+    },
+    "runtimeExtensions": [
+      "./dist/index.js"
+    ],
+    "install": {
+      "defaultChoice": "local",
+      "minHostVersion": ">=2026.5.4"
+    }
+  }
+}

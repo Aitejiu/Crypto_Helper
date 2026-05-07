@@ -1,0 +1,51 @@
+{
+  "id": "crypto-helper-tools",
+  "enabledByDefault": true,
+  "activation": {
+    "onStartup": false
+  },
+  "contracts": {
+    "tools": [
+      "crypto_helper_registry_lookup",
+      "crypto_helper_registry_list",
+      "crypto_helper_registry_get_active",
+      "crypto_helper_registry_add_mock",
+      "crypto_helper_registry_disable_mock",
+      "crypto_helper_registry_archive_mock",
+      "crypto_helper_get_soul",
+      "crypto_helper_get_profile",
+      "crypto_helper_generate_soul_patch_mock",
+      "crypto_helper_apply_soul_patch_mock",
+      "crypto_helper_search_evidence",
+      "crypto_helper_query_trade_calls",
+      "crypto_helper_query_events",
+      "crypto_helper_query_opinions",
+      "crypto_helper_query_news",
+      "crypto_helper_compare_kols",
+      "crypto_helper_get_kol_performance",
+      "crypto_helper_get_active_symbols",
+      "crypto_helper_get_market_summary",
+      "crypto_helper_generate_report",
+      "crypto_helper_generate_daily_market_report",
+      "crypto_helper_security_review"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "projectRoot": {
+        "type": "string",
+        "description": "Absolute path to the crypto_helper project root containing pyproject.toml."
+      },
+      "dataDir": {
+        "type": "string",
+        "description": "Optional CRYPTO_HELPER_DATA_DIR override for runtime data."
+      },
+      "uvBinary": {
+        "type": "string",
+        "description": "Optional uv executable override. Defaults to \"uv\"."
+      }
+    }
+  }
+}
