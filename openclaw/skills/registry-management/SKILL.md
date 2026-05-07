@@ -1,13 +1,25 @@
 ---
 name: registry-management
-description: Manage the crypto_helper KOL registry lifecycle. Use when the request asks to list KOLs, look up aliases, add a dynamic KOL, disable one, archive one, or explain registry state.
+description: Manage the crypto_helper KOL registry lifecycle. Use when a request needs KOL lookup, listing, activation status interpretation, or mock add, disable, and archive operations.
 ---
 
 # Registry Management
 
-Use this skill for KOL lifecycle and lookup operations.
+## Purpose
 
-## Primary Tools
+Define how crypto_helper agents interpret and modify KOL registry state without confusing registry entities with agent identities.
+
+## When to use
+
+Use this skill when:
+
+- the user asks which KOLs are tracked
+- a KOL name or alias must be resolved
+- a dynamic KOL should be added
+- a KOL should be disabled or archived
+- the system must explain current lifecycle status
+
+## Required tools
 
 - `crypto_helper_registry_lookup`
 - `crypto_helper_registry_list`
@@ -16,27 +28,28 @@ Use this skill for KOL lifecycle and lookup operations.
 - `crypto_helper_registry_disable_mock`
 - `crypto_helper_registry_archive_mock`
 
-## Rules
+## Procedure
 
-- Lookup must support KOL id, display name, and alias.
-- Missing KOLs must stay missing; do not invent entries.
-- Adding a KOL creates a dynamic mock KOL only.
-- Disabling or archiving never hard-deletes history.
-- Archived KOLs can remain available for historical analysis.
+1. Resolve KOL identity with `crypto_helper_registry_lookup`.
+2. For list operations, prefer `crypto_helper_registry_get_active` unless the user asks for broader status coverage.
+3. For add operations, create a dynamic KOL by default.
+4. For disable operations, keep historical data and update lifecycle status.
+5. For archive operations, preserve history while removing the KOL from normal active comparisons.
+6. Report resulting status, limitations, and practical next steps.
 
-## Common Flows
+## Safety rules
 
-- List tracked KOLs:
-  use `crypto_helper_registry_get_active`
-- Explain a name or alias:
-  use `crypto_helper_registry_lookup`
-- Add a new watchlist KOL:
-  use `crypto_helper_registry_add_mock`
-- Remove from active use without deletion:
-  disable or archive through the matching tool
+- KOLs are registry data entities, not default OpenClaw agents.
+- All KOL resolution must go through `crypto_helper_registry_lookup`.
+- Never invent a missing KOL.
+- Added KOLs are dynamic by default.
+- Disabled KOLs do not allow persona simulation.
+- Archived KOLs keep historical data but are not active by default.
+- Never hard-delete KOLs by default.
+- Add, disable, and archive are mock admin operations.
 
-## Output Expectations
+## Required output format
 
-- Return the registry result clearly
-- Preserve lifecycle status
-- When a change is made, note that it is `mock_only`
+- resolved or changed KOL status
+- limitations
+- next steps

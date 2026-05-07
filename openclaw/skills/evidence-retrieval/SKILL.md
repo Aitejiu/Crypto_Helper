@@ -1,13 +1,23 @@
 ---
 name: evidence-retrieval
-description: Retrieve and explain crypto_helper evidence across notes, trade calls, events, opinions, and news. Use when an answer needs supporting references, historical call details, or evidence-backed explanation.
+description: Retrieve, rank, and explain crypto_helper evidence for KOL behavior, trade history, opinions, events, and market news. Use when an answer must be evidence-backed and traceable.
 ---
 
 # Evidence Retrieval
 
-Use this skill whenever an answer should cite why the system believes a KOL behaved a certain way.
+## Purpose
 
-## Primary Tools
+Define how crypto_helper agents gather and present evidence-backed support for KOL conclusions, historical behavior, and market context.
+
+## When to use
+
+Use this skill when:
+
+- a conclusion must cite evidence references
+- the user asks why the system made a KOL inference
+- the answer depends on trade calls, events, opinions, or news
+
+## Required tools
 
 - `crypto_helper_search_evidence`
 - `crypto_helper_query_trade_calls`
@@ -15,26 +25,30 @@ Use this skill whenever an answer should cite why the system believes a KOL beha
 - `crypto_helper_query_opinions`
 - `crypto_helper_query_news`
 
-## Retrieval Order
+## Procedure
 
-1. If the request is about a specific KOL, resolve that KOL first through registry.
-2. Use `crypto_helper_search_evidence` for broad explanation and keyword matching.
-3. Use the specialized query tools when the user asks for concrete call/event/opinion/news records.
+1. If the request targets a specific KOL, keep the query bound to that KOL.
+2. Use `crypto_helper_search_evidence` for broad relevance matching.
+3. Use the specialized query tools when the user asks for calls, events, opinions, or news explicitly.
+4. Rank evidence by:
+   KOL match, symbol match, query keyword match, confidence, timestamp
+5. Prefer recent, high-confidence evidence when summarizing.
+6. If evidence is insufficient, lower confidence.
+7. If evidence remains insufficient, include explicit limitations.
+8. Return evidence references with summaries rather than raw private message content.
 
-## Query Strategy
+## Safety rules
 
-- Behavior explanation:
-  search evidence by KOL + symbol + keyword
-- Trading style:
-  trade calls + events
-- Sentiment or thesis:
-  opinions
-- Market developments:
-  news
+- Every conclusion must bind to `evidence_refs`.
+- Never fabricate evidence.
+- Never mix evidence across KOLs as if it belonged to one KOL.
+- If evidence is insufficient, lower confidence.
+- If evidence is insufficient, output limitations.
+- Never output raw private messages directly; only summarize and cite evidence refs.
 
-## Output Rules
+## Required output format
 
-- Prefer the newest, highest-confidence evidence.
-- Call out when evidence is thin or partial.
-- Do not fabricate sources.
-- Preserve `evidence_id`, timestamps, and summary-level references when summarizing.
+- matched evidence summary
+- `evidence_refs`
+- confidence statement
+- limitations when evidence is thin
