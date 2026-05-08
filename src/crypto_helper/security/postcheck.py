@@ -40,7 +40,15 @@ def output_safety_postcheck(
             reason="Output must not impersonate a real KOL.",
             issue_code="impersonation_output",
         )
-    if _contains_any(text, REALTIME_CLAIM_PHRASES):
+    if _contains_any(text, REALTIME_CLAIM_PHRASES) and not _contains_any(
+        text,
+        (
+            "not the kol's real-time view",
+            "not real-time",
+            "不是实时观点",
+            "不是该 kol 本人观点",
+        ),
+    ):
         return _decision(
             action=SafetyAction.REFUSE,
             level=SafetyLevel.HIGH_RISK,
@@ -53,6 +61,13 @@ def output_safety_postcheck(
             level=SafetyLevel.HIGH_RISK,
             reason="Output must not fabricate evidence or sources.",
             issue_code="fabricated_evidence_output",
+        )
+    if "private source" in text or "私密来源" in text or "private message says" in text:
+        return _decision(
+            action=SafetyAction.REFUSE,
+            level=SafetyLevel.HIGH_RISK,
+            reason="Output must not present mock or redacted data as private live source material.",
+            issue_code="private_source_output",
         )
     if _contains_any(text, INVESTMENT_ADVICE_PHRASES):
         return _decision(

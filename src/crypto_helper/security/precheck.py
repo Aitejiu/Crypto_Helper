@@ -14,6 +14,7 @@ from crypto_helper.security.schemas import (
     SafetyIssue,
     SafetyLevel,
 )
+from crypto_helper.services.audit_service import write_security_audit
 
 
 def safety_precheck(request_context: RequestContext, user_message: str) -> SafetyDecision:
@@ -47,12 +48,14 @@ def safety_precheck(request_context: RequestContext, user_message: str) -> Safet
                 reason="Admin-only request is allowed in admin context.",
                 issue_code="admin_allowed",
             )
-        return _decision(
+        decision = _decision(
             action=SafetyAction.REQUIRE_ADMIN,
             level=SafetyLevel.ADMIN_ONLY,
             reason="This workflow requires a private admin context.",
             issue_code="admin_only",
         )
+        _record_security_block(request_context, "admin_only_request_blocked", decision)
+        return decision
     if _contains_any(lowered, INVESTMENT_ADVICE_PHRASES):
         return _decision(
             action=SafetyAction.DOWNGRADE,
@@ -91,3 +94,21 @@ def _decision(
 
 def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
     return any(phrase in text for phrase in phrases)
+
+
+def _record_security_block(
+    request_context: RequestContext,
+    event_type: str,
+    decision: SafetyDecision,
+) -> None:
+    write_security_audit(
+        event_type=event_type,
+        actor="system",
+        target_type="workflow_request",
+        target_id=event_type,
+        action=decision.action.value,
+        request_context=request_context,
+        after=decision.model_dump(mode="json"),
+        status="blocked",
+        error=decision.reason,
+    )

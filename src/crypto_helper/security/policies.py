@@ -1,5 +1,58 @@
 from __future__ import annotations
 
+PERSONA_POLICY = {
+    "allowed": (
+        "historical-profile-based simulation",
+        "evidence-backed style summary",
+        "historical preference analysis",
+    ),
+    "forbidden": (
+        "claiming to be a real KOL",
+        "claiming real-time viewpoint",
+        "fabricating unsaid statements",
+        "direct buy/sell advice",
+    ),
+}
+
+INVESTMENT_ADVICE_POLICY = {
+    "allowed": (
+        "historical analysis",
+        "risk summary",
+        "scenario analysis",
+        "educational explanation",
+    ),
+    "forbidden": (
+        "buy now",
+        "sell now",
+        "open leverage",
+        "personalized investment advice",
+        "guaranteed returns",
+    ),
+}
+
+EVIDENCE_POLICY = {
+    "allowed": (
+        "use existing evidence",
+        "state confidence",
+        "admit evidence gaps",
+    ),
+    "forbidden": (
+        "fabricated source",
+        "fabricated evidence",
+        "private raw message export",
+        "treat mock data as private live source",
+    ),
+}
+
+ADMIN_POLICY = {
+    "allowed": ("manager-admin in private admin context",),
+    "forbidden": (
+        "public manager-agent admin mutation",
+        "public context admin tools",
+        "non-admin maintenance writes",
+    ),
+}
+
 ADMIN_ONLY_PHRASES = (
     "import pending",
     "process pending",
@@ -21,10 +74,18 @@ INVESTMENT_ADVICE_PHRASES = (
     "sell now",
     "should i buy",
     "should i sell",
+    "should buy",
+    "should sell",
+    "you should buy",
+    "you should sell",
     "go long",
     "go short",
     "open leverage",
     "梭哈",
+    "该买",
+    "该卖",
+    "要不要买",
+    "要不要卖",
     "买入",
     "卖出",
     "开杠杆",
@@ -50,6 +111,8 @@ FABRICATED_EVIDENCE_PHRASES = (
     "编造证据",
     "伪造证据",
     "虚构来源",
+    "私密消息说",
+    "private source says",
 )
 
 PRIVATE_EXPORT_PHRASES = (
