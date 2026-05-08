@@ -28,7 +28,10 @@
       "crypto_helper_get_market_summary",
       "crypto_helper_generate_report",
       "crypto_helper_generate_daily_market_report",
-      "crypto_helper_security_review"
+      "crypto_helper_security_review",
+      "crypto_helper_vector_rebuild_index",
+      "crypto_helper_vector_index_status",
+      "crypto_helper_vector_search"
     ]
   },
   "configSchema": {

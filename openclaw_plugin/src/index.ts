@@ -7,6 +7,7 @@ import { registerReportTools } from "./tools/report.js";
 import { registerSecurityTools } from "./tools/security.js";
 import { registerSoulTools } from "./tools/soul.js";
 import { registerStatsTools } from "./tools/stats.js";
+import { registerVectorTools } from "./tools/vector.js";
 
 export default definePluginEntry({
   id: "crypto-helper-tools",
@@ -20,5 +21,6 @@ export default definePluginEntry({
     registerStatsTools(api);
     registerReportTools(api);
     registerSecurityTools(api);
+    registerVectorTools(api);
   },
 });
