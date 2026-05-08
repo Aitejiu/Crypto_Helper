@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, TypeVar
 
 import typer
 
 from crypto_helper import __version__
+from crypto_helper.core.data_loader import load_json_path
 from crypto_helper.core.evidence_store import (
     query_events,
     query_news,
@@ -29,7 +31,14 @@ from crypto_helper.core.registry_service import (
     list_kols,
     resolve_kol_query,
 )
-from crypto_helper.core.report_service import generate_daily_market_report, generate_kol_report
+from crypto_helper.core.report_service import (
+    collect_report_context,
+    finalize_report,
+    generate_daily_market_report,
+    generate_kol_report,
+    generate_report_draft,
+    validate_report_claims,
+)
 from crypto_helper.core.security_review import review_text
 from crypto_helper.core.soul_store import apply_soul_patch_mock, generate_soul_patch_mock, get_soul
 from crypto_helper.core.stats_service import (
@@ -39,6 +48,7 @@ from crypto_helper.core.stats_service import (
     get_market_summary,
 )
 from crypto_helper.models.common import DomainError, ok_response, to_jsonable
+from crypto_helper.security.schemas import SafetyAction, SafetyDecision, SafetyLevel
 
 app = typer.Typer(
     name="crypto-helper",
@@ -342,6 +352,60 @@ def report_daily_market(
 ) -> None:
     del json_output
     _emit(lambda: generate_daily_market_report(time_range=time_range))
+
+
+@report_app.command("collect-context")
+def report_collect_context(
+    kol_id: str = typer.Option(..., "--kol-id"),
+    time_range: str = typer.Option("7d", "--range"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: collect_report_context(kol_id, time_range=time_range))
+
+
+@report_app.command("generate-draft")
+def report_generate_draft(
+    context_file: str = typer.Option(..., "--context-file"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: generate_report_draft(load_json_path(Path(context_file))))
+
+
+@report_app.command("validate-claims")
+def report_validate_claims(
+    draft_file: str = typer.Option(..., "--draft-file"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: validate_report_claims(
+            load_json_path(Path(draft_file)),
+            {
+                ref["evidence_id"]: ref
+                for ref in load_json_path(Path(draft_file)).get("evidence_refs", [])
+            },
+        )
+    )
+
+
+@report_app.command("finalize")
+def report_finalize(
+    validated_draft_file: str = typer.Option(..., "--validated-draft-file"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: finalize_report(
+            load_json_path(Path(validated_draft_file)),
+            SafetyDecision(
+                action=SafetyAction.ALLOW,
+                safety_level=SafetyLevel.GUARDED,
+                reason="CLI finalize default safety gate.",
+            ),
+        )
+    )
 
 
 @security_app.command("review")
