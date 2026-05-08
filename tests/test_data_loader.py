@@ -12,7 +12,27 @@ def test_runtime_data_can_initialize_from_seed(runtime_data_dir: object) -> None
     data_dir = paths.ensure_runtime_data()
     assert data_dir.exists()
     assert (data_dir / "registry" / "kols.json").exists()
+    assert (data_dir / "registry" / "aliases.json").exists()
+    assert (data_dir / "registry" / "platforms.json").exists()
     assert (data_dir / "mock" / "trade_calls.json").exists()
+    assert (data_dir / "evidence" / "trade_calls").exists()
+    assert (data_dir / "imports" / "failed").exists()
+    assert (data_dir / "imports" / "processed").exists()
+    assert (data_dir / "workflow_runs").exists()
+
+
+def test_runtime_layout_creates_default_files(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    data_dir = paths.ensure_runtime_data()
+    assert (data_dir / "audit" / "registry.jsonl").exists()
+    assert (data_dir / "audit" / "import.jsonl").exists()
+    assert (data_dir / "audit" / "profile.jsonl").exists()
+    assert (data_dir / "audit" / "security.jsonl").exists()
+    kol_a_dir = data_dir / "kols" / "kol_a"
+    assert (kol_a_dir / "stats.json").exists()
+    assert (kol_a_dir / "evidence_index.json").exists()
+    assert (kol_a_dir / "reports" / "history").exists()
+    assert (kol_a_dir / "audit.jsonl").exists()
 
 
 def test_crypto_helper_data_dir_env_override_works(runtime_data_dir: object) -> None:
