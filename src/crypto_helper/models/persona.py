@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import Field, field_validator
 
+from crypto_helper.evidence.schemas import EvidenceBackedClaim
 from crypto_helper.models.common import DomainModel
 from crypto_helper.models.evidence import EvidenceRef
 
@@ -25,6 +26,7 @@ class PersonaAnswer(DomainModel):
     answer: str
     reasoning: str
     evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    claims: list[EvidenceBackedClaim] = Field(default_factory=list)
     confidence: float
     limitations: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)

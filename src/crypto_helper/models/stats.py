@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import Field
 
+from crypto_helper.evidence.schemas import EvidenceBackedClaim
 from crypto_helper.models.common import DomainModel
 from crypto_helper.models.evidence import EvidenceRef
 
@@ -34,6 +35,7 @@ class StatsResult(DomainModel):
     sample_size: int
     metrics: dict[str, Any] = Field(default_factory=dict)
     evidence_refs: list[EvidenceRef] = Field(default_factory=list)
+    claims: list[EvidenceBackedClaim] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     rankings: list[KOLRankingItem] = Field(default_factory=list)
     performance: KOLPerformance | None = None
