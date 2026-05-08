@@ -9,6 +9,7 @@ from crypto_helper.core.evidence_store import (
     query_news,
     query_opinions,
     query_trade_calls,
+    search_evidence,
 )
 from crypto_helper.core.profile_service import get_profile
 from crypto_helper.core.registry_service import require_kol
@@ -106,15 +107,25 @@ def collect_report_context(kol_id: str, time_range: str | None = None) -> dict[s
     trade_calls = query_trade_calls(kol_query=entry.kol_id, time_range=effective_range)
     events = query_events(kol_query=entry.kol_id, time_range=effective_range)
     opinions = query_opinions(kol_query=entry.kol_id, time_range=effective_range)
+    semantic_evidence = search_evidence(
+        kol_query=entry.kol_id,
+        query=_build_report_evidence_query(
+            entry.display_name, profile.trade_style, effective_range
+        ),
+        limit=5,
+    )
     evidence_refs = [*performance.evidence_refs]
     evidence_refs.extend(_refs_from_events(events))
     evidence_refs.extend(_refs_from_opinions(opinions))
+    evidence_refs.extend(semantic_evidence.items)
     limitations = list(performance.limitations)
     limitations.extend(profile_payload["limitations"])
+    limitations.extend(semantic_evidence.limitations)
     if entry.status == KOLStatus.ARCHIVED:
         limitations.append("Archived KOL report is historical only.")
     if entry.tier == KOLTier.DYNAMIC and profile.evidence_strength < 4:
         limitations.append("Dynamic KOL report has low confidence because evidence is sparse.")
+    evidence_refs = _dedupe_evidence_refs(evidence_refs)
     return {
         "entry": entry.model_dump(mode="json"),
         "profile": profile.model_dump(mode="json"),
@@ -325,3 +336,19 @@ def _default_report_safety_decision() -> SafetyDecision:
         safety_level=SafetyLevel.GUARDED,
         reason="Draft report may proceed to finalization.",
     )
+
+
+def _build_report_evidence_query(
+    display_name: str,
+    trade_style: list[str],
+    time_range: str,
+) -> str:
+    style_text = " ".join(trade_style[:3]) if trade_style else "historical style"
+    return f"{display_name} {time_range} report {style_text} risk reclaim invalidation evidence"
+
+
+def _dedupe_evidence_refs(refs: list[EvidenceRef]) -> list[EvidenceRef]:
+    deduped: dict[str, EvidenceRef] = {}
+    for ref in refs:
+        deduped[ref.evidence_id] = ref
+    return list(deduped.values())

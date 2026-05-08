@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import Any, Callable, cast
+
 import pytest
 
+from crypto_helper.core import report_service
+from crypto_helper.models.evidence import EvidenceSearchResult
 from crypto_helper.core.report_service import (
     collect_report_context,
     finalize_report,
@@ -36,6 +40,41 @@ def test_daily_market_report_includes_news_evidence(runtime_data_dir: object) ->
     del runtime_data_dir
     report = generate_daily_market_report(time_range="1d")
     assert any(ref.source_type == "news" for ref in report.evidence_refs)
+
+
+def test_collect_report_context_uses_search_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    runtime_data_dir: object,
+) -> None:
+    del runtime_data_dir
+    called = {"count": 0}
+    original = cast(
+        Callable[..., EvidenceSearchResult],
+        getattr(report_service, "search_evidence"),
+    )
+
+    def wrapped_search_evidence(
+        kol_query: str | None = None,
+        symbol: str | None = None,
+        query: str | None = None,
+        source_type: str | None = None,
+        limit: int = 5,
+    ) -> EvidenceSearchResult:
+        called["count"] += 1
+        return original(
+            kol_query=kol_query,
+            symbol=symbol,
+            query=query,
+            source_type=source_type,
+            limit=limit,
+        )
+
+    monkeypatch.setattr(report_service, "search_evidence", wrapped_search_evidence)
+
+    context = collect_report_context("KOL_A", time_range="7d")
+
+    assert context["evidence_refs"]
+    assert called["count"] == 1
 
 
 def test_report_draft_generation(runtime_data_dir: object) -> None:
