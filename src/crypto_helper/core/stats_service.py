@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from statistics import mean
 
 from crypto_helper.core.evidence_store import (
@@ -8,6 +9,7 @@ from crypto_helper.core.evidence_store import (
     query_trade_calls,
     search_evidence,
 )
+from crypto_helper.core.hybrid_retriever import hybrid_search_evidence
 from crypto_helper.core.profile_service import get_profile
 from crypto_helper.core.registry_service import get_active_kols, require_kol
 from crypto_helper.models.evidence import EvidenceRef, TradeCall
@@ -93,6 +95,12 @@ def get_market_summary(symbol: str | None = None, time_range: str = "1d") -> Sta
     news_items = query_news(symbol=symbol, time_range=time_range)
     opinions = query_opinions(symbol=symbol, time_range=time_range)
     calls = query_trade_calls(symbol=symbol, time_range=time_range)
+    hybrid_evidence = hybrid_search_evidence(
+        symbol=symbol,
+        query=_market_summary_query(symbol, time_range),
+        limit=8,
+        time_range=time_range,
+    )
     symbol_counts: dict[str, int] = {}
     evidence_refs: list[EvidenceRef] = []
     for news_item in news_items:
@@ -153,7 +161,20 @@ def get_market_summary(symbol: str | None = None, time_range: str = "1d") -> Sta
         symbol_name
         for symbol_name, _ in sorted(symbol_counts.items(), key=lambda pair: (-pair[1], pair[0]))
     ]
+    observation_evidence = [
+        item
+        for item in hybrid_evidence.items
+        if item.source_type in {"market_analysis", "opinion", "news"}
+    ]
+    evidence_refs.extend(observation_evidence)
+    evidence_refs = _dedupe_evidence_refs(evidence_refs)
+    latest_data_timestamp = _latest_timestamp(evidence_refs)
     limitations = ["Historical mock market snapshot only; not live market data."]
+    if latest_data_timestamp is not None and _is_stale(latest_data_timestamp, time_range):
+        limitations.append(
+            "No fresh data in the requested window; summary uses the latest available snapshot."
+        )
+    limitations.extend(hybrid_evidence.limitations)
     return StatsResult(
         title=f"Market summary for {symbol or 'all symbols'} over {time_range}",
         sample_size=len(news_items) + len(opinions) + len(calls),
@@ -164,7 +185,23 @@ def get_market_summary(symbol: str | None = None, time_range: str = "1d") -> Sta
         },
         evidence_refs=evidence_refs[:10],
         limitations=limitations,
-        metadata={"top_symbols": top_symbols},
+        metadata={
+            "top_symbols": top_symbols,
+            "latest_data_timestamp": latest_data_timestamp.isoformat()
+            if latest_data_timestamp is not None
+            else None,
+            "relevant_observations": [
+                {
+                    "evidence_id": item.evidence_id,
+                    "source_type": item.source_type,
+                    "symbol": item.symbol,
+                    "summary": item.summary,
+                    "confidence": item.confidence,
+                    "timestamp": item.timestamp.isoformat(),
+                }
+                for item in observation_evidence[:5]
+            ],
+        },
     )
 
 
@@ -229,3 +266,37 @@ def _shared_limitations(rankings: list[KOLRankingItem]) -> list[str]:
     if any(item.sample_size < 3 for item in rankings):
         limitations.append("One or more KOLs have limited sample sizes in the selected window.")
     return limitations
+
+
+def _market_summary_query(symbol: str | None, time_range: str) -> str:
+    symbol_text = symbol or "market"
+    return f"{symbol_text} market summary risk observation news opinion analysis {time_range}"
+
+
+def _latest_timestamp(items: list[EvidenceRef]) -> datetime | None:
+    if not items:
+        return None
+    return max(item.timestamp for item in items)
+
+
+def _is_stale(latest_timestamp: datetime, time_range: str) -> bool:
+    return datetime.now(UTC) - latest_timestamp > _parse_time_range(time_range)
+
+
+def _parse_time_range(time_range: str) -> timedelta:
+    count = int(time_range[:-1])
+    unit = time_range[-1]
+    if unit == "d":
+        return timedelta(days=count)
+    if unit == "h":
+        return timedelta(hours=count)
+    if unit == "w":
+        return timedelta(weeks=count)
+    return timedelta(days=1)
+
+
+def _dedupe_evidence_refs(items: list[EvidenceRef]) -> list[EvidenceRef]:
+    deduped: dict[str, EvidenceRef] = {}
+    for item in items:
+        deduped[item.evidence_id] = item
+    return list(deduped.values())

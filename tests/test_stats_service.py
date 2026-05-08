@@ -38,3 +38,17 @@ def test_market_summary_for_sol(runtime_data_dir: object) -> None:
     del runtime_data_dir
     result = get_market_summary(symbol="SOL", time_range="1d")
     assert "SOL" in result.metadata["top_symbols"]
+    assert result.metadata["relevant_observations"]
+    assert result.metadata["latest_data_timestamp"]
+    assert any(
+        item["source_type"] in {"market_analysis", "opinion", "news"}
+        for item in result.metadata["relevant_observations"]
+    )
+
+
+def test_market_summary_marks_stale_snapshot(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    result = get_market_summary(symbol="SOL", time_range="1d")
+    assert any(
+        "latest available snapshot" in limitation.lower() for limitation in result.limitations
+    )
