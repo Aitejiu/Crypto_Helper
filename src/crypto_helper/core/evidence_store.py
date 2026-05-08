@@ -26,6 +26,41 @@ def search_evidence(
     source_type: str | None = None,
     limit: int = 5,
 ) -> EvidenceSearchResult:
+    if query:
+        try:
+            from crypto_helper.core.hybrid_retriever import hybrid_search_evidence
+
+            return hybrid_search_evidence(
+                kol_query=kol_query,
+                symbol=symbol,
+                query=query,
+                source_type=source_type,
+                limit=limit,
+            )
+        except Exception:
+            return _structured_search_evidence(
+                kol_query=kol_query,
+                symbol=symbol,
+                query=query,
+                source_type=source_type,
+                limit=limit,
+            )
+    return _structured_search_evidence(
+        kol_query=kol_query,
+        symbol=symbol,
+        query=query,
+        source_type=source_type,
+        limit=limit,
+    )
+
+
+def _structured_search_evidence(
+    kol_query: str | None = None,
+    symbol: str | None = None,
+    query: str | None = None,
+    source_type: str | None = None,
+    limit: int = 5,
+) -> EvidenceSearchResult:
     entry_kol_id: str | None = None
     if kol_query:
         entry_kol_id = require_kol(kol_query).kol_id
