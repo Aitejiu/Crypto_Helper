@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import Field
 
 from crypto_helper.models.common import DomainModel
+from crypto_helper.models.registry import KOLRegistryEntry
 from crypto_helper.request_context import RequestContext
 from crypto_helper.security import (
     SafetyAction,
@@ -192,7 +193,7 @@ def _best_kol_resolution(user_message: str) -> dict[str, Any]:
     entry = best.get("entry")
     return {
         **best,
-        "entry": entry.model_dump(mode="json") if hasattr(entry, "model_dump") else entry,
+        "entry": entry.model_dump(mode="json") if isinstance(entry, KOLRegistryEntry) else entry,
     }
 
 

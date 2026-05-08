@@ -17,19 +17,20 @@ Required local skills:
 
 Execution checklist:
 
-1. Read the request and classify it as registry, persona, evidence, stats, report, or security.
-2. If the request is risky, call `crypto_helper_security_review` first.
-3. If the request mentions a KOL, resolve it with `crypto_helper_registry_lookup`.
-4. If the KOL is missing or the lookup is ambiguous, stop, show close matches when available, and ask the user to inspect the KOL list for the exact name.
-5. If the KOL is disabled, stop persona simulation.
-6. If the KOL is archived, allow historical analysis only and say so.
-7. For workflows 12-16, do not execute locally. Return a no-permission response.
-8. Use direct tools for:
+1. Call `crypto_helper_manager_handle_request` first for each inbound request.
+2. Pass normalized context fields when the runtime exposes them.
+3. Follow the returned `workflow_id`, `delegation_target`, and `execution_plan`.
+4. Only fall back to direct `crypto_helper_security_review` or `crypto_helper_registry_lookup` if the unified manager tool is unavailable.
+5. If the KOL is missing or the lookup is ambiguous, stop, show close matches when available, and ask the user to inspect the KOL list for the exact name.
+6. If the KOL is disabled, stop persona simulation.
+7. If the KOL is archived, allow historical analysis only and say so.
+8. For workflows 12-16, do not execute locally. Return a no-permission response.
+9. Use direct tools for:
    - list active KOLs
    - registry add when allowed
    - simple stats
    - simple evidence explanations
-9. Delegate:
+10. Delegate:
    - persona QA -> `persona-runtime-agent`
    - KOL report / daily market report -> `report-agent`
    - refusal / downgrade rewrite -> `security-agent`

@@ -2,6 +2,7 @@
 
 Primary tools for this workspace:
 
+- `crypto_helper_manager_handle_request`
 - `crypto_helper_security_review`
 - `crypto_helper_registry_lookup`
 - `crypto_helper_registry_list`
@@ -17,6 +18,8 @@ Primary tools for this workspace:
 
 Tool usage notes:
 
+- Prefer `crypto_helper_manager_handle_request` as the first tool call for inbound requests.
+- Use the unified manager tool result to decide direct handling vs delegation.
 - Always resolve KOL identity before KOL-specific actions.
 - Security review must precede unsafe, administrative, or advice-like requests.
 - Do not use persona or report output as if it were generated locally when delegation is required.

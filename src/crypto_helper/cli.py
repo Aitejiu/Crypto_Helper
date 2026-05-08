@@ -48,7 +48,9 @@ from crypto_helper.core.stats_service import (
     get_market_summary,
 )
 from crypto_helper.models.common import DomainError, ok_response, to_jsonable
+from crypto_helper.request_context import RequestContext
 from crypto_helper.security.schemas import SafetyAction, SafetyDecision, SafetyLevel
+from crypto_helper.services.manager_agent_flow import handle_manager_request
 
 app = typer.Typer(
     name="crypto-helper",
@@ -65,6 +67,7 @@ persona_app = typer.Typer(help="Persona operations.")
 report_app = typer.Typer(help="Report operations.")
 security_app = typer.Typer(help="Security operations.")
 import_app = typer.Typer(help="Data import operations.")
+manager_app = typer.Typer(help="Manager entry workflow operations.")
 
 app.add_typer(registry_app, name="registry")
 app.add_typer(soul_app, name="soul")
@@ -75,6 +78,7 @@ app.add_typer(persona_app, name="persona")
 app.add_typer(report_app, name="report")
 app.add_typer(security_app, name="security")
 app.add_typer(import_app, name="import")
+app.add_typer(manager_app, name="manager")
 
 F = TypeVar("F", bound=Callable[[], Any])
 
@@ -461,6 +465,41 @@ def import_process_pending_command(
     )
 
 
+@manager_app.command("handle-request")
+def manager_handle_request_command(
+    message: str = typer.Option(..., "--message"),
+    channel: str = typer.Option(..., "--channel"),
+    chat_id: str = typer.Option(..., "--chat-id"),
+    user_id: str = typer.Option(..., "--user-id"),
+    guild_id: str | None = typer.Option(None, "--guild-id"),
+    is_admin_context: bool = typer.Option(False, "--is-admin-context"),
+    message_id: str | None = typer.Option(None, "--message-id"),
+    timestamp: str | None = typer.Option(None, "--timestamp"),
+    locale: str = typer.Option("zh-CN", "--locale"),
+    visibility: str = typer.Option("public", "--visibility"),
+    raw_event_file: str | None = typer.Option(None, "--raw-event-file"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: handle_manager_request(
+            _build_request_context(
+                channel=channel,
+                guild_id=guild_id,
+                chat_id=chat_id,
+                user_id=user_id,
+                is_admin_context=is_admin_context,
+                message_id=message_id,
+                timestamp=timestamp,
+                locale=locale,
+                visibility=visibility,
+                raw_event_file=raw_event_file,
+            ),
+            message,
+        )
+    )
+
+
 def main() -> None:
     app()
 
@@ -511,3 +550,33 @@ def _emit(callback: F) -> None:
             )
         )
         raise typer.Exit(code=1) from exc
+
+
+def _build_request_context(
+    *,
+    channel: str,
+    guild_id: str | None,
+    chat_id: str,
+    user_id: str,
+    is_admin_context: bool,
+    message_id: str | None,
+    timestamp: str | None,
+    locale: str,
+    visibility: str,
+    raw_event_file: str | None,
+) -> RequestContext:
+    raw_event = load_json_path(Path(raw_event_file)) if raw_event_file else None
+    payload: dict[str, Any] = {
+        "channel": channel,
+        "guild_id": guild_id,
+        "chat_id": chat_id,
+        "user_id": user_id,
+        "is_admin_context": is_admin_context,
+        "message_id": message_id,
+        "locale": locale,
+        "visibility": visibility,
+        "raw_event": raw_event,
+    }
+    if timestamp is not None:
+        payload["timestamp"] = timestamp
+    return RequestContext.model_validate(payload)

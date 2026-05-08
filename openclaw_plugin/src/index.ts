@@ -1,6 +1,7 @@
 import { definePluginEntry } from "openclaw/plugin-sdk/core";
 
 import { registerEvidenceTools } from "./tools/evidence.js";
+import { registerManagerTools } from "./tools/manager.js";
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerReportTools } from "./tools/report.js";
 import { registerSecurityTools } from "./tools/security.js";
@@ -12,6 +13,7 @@ export default definePluginEntry({
   name: "Crypto Helper Tools",
   description: "Expose crypto_helper Python CLI capabilities as OpenClaw tools.",
   register(api) {
+    registerManagerTools(api);
     registerRegistryTools(api);
     registerSoulTools(api);
     registerEvidenceTools(api);

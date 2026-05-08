@@ -6,6 +6,7 @@
   },
   "contracts": {
     "tools": [
+      "crypto_helper_manager_handle_request",
       "crypto_helper_registry_lookup",
       "crypto_helper_registry_list",
       "crypto_helper_registry_get_active",
