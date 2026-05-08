@@ -1,0 +1,54 @@
+from __future__ import annotations
+
+from crypto_helper.request_context import RequestContext
+from crypto_helper.services.manager_agent_flow import handle_manager_request
+
+
+def test_manager_flow_routes_persona_request(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    context = RequestContext(
+        channel="discord",
+        guild_id="guild-1",
+        chat_id="chat-1",
+        user_id="user-1",
+        visibility="public",
+    )
+
+    result = handle_manager_request(context, "KOL_A 如果 BTC 跌破 62000，可能怎么看？")
+
+    assert result.workflow_id == "kol_persona"
+    assert result.delegation_target == "persona-runtime-agent"
+    assert result.response_mode == "planned"
+
+
+def test_manager_flow_blocks_admin_request_in_public_context(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    context = RequestContext(
+        channel="telegram",
+        guild_id=None,
+        chat_id="public-chat",
+        user_id="user-2",
+        visibility="public",
+    )
+
+    result = handle_manager_request(context, "导入数据")
+
+    assert result.workflow_id == "admin_import_pending"
+    assert result.response_mode == "blocked"
+    assert result.response_payload["reason"] == "no_permission"
+
+
+def test_manager_flow_routes_market_report(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    context = RequestContext(
+        channel="discord",
+        guild_id="guild-2",
+        chat_id="chat-2",
+        user_id="user-3",
+        visibility="public",
+    )
+
+    result = handle_manager_request(context, "生成今天的市场情报日报")
+
+    assert result.workflow_id == "daily_market_report"
+    assert result.delegation_target == "report-agent"
