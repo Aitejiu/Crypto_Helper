@@ -6,6 +6,7 @@ import shutil
 from collections.abc import Callable
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from crypto_helper.cli import app
@@ -162,6 +163,7 @@ def test_process_pending_imports_skips_when_no_new_data(tmp_path: Path) -> None:
 
     assert summary["has_new_data"] is False
     assert summary["processed_count"] == 0
+    assert summary["vector_index"]["status"] == "skipped"
     assert pending_dir.exists()
 
 
@@ -177,6 +179,7 @@ def test_process_pending_imports_consumes_bundle_directory(tmp_path: Path) -> No
     assert summary["has_new_data"] is True
     assert summary["processed_count"] == 1
     assert summary["deleted_count"] == 1
+    assert summary["vector_index"]["status"] in {"rebuilt", "skipped", "warning"}
     assert not bundle_dir.exists()
 
 
@@ -198,6 +201,57 @@ def test_process_pending_imports_consumes_root_csvs_without_events(tmp_path: Pat
         (output_dir / "mock" / "trade_call_events.json").read_text(encoding="utf-8")
     )
     assert trade_events == []
+
+
+def test_promote_imported_kols_attempts_vector_rebuild(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    source_dir = _build_source_dir(tmp_path / "source")
+    output_dir = _build_runtime_dir(tmp_path / "runtime")
+    monkeypatch.setenv("CRYPTO_HELPER_VECTOR_ENABLED", "true")
+
+    called = {"count": 0}
+
+    def fake_rebuild(self: object) -> object:
+        called["count"] += 1
+
+        class _Status:
+            document_count = 7
+            index_path = "vector/chroma"
+            backend = "chroma"
+
+        return _Status()
+
+    monkeypatch.setattr("crypto_helper.core.import_service.VectorStore.rebuild_index", fake_rebuild)
+
+    summary = promote_imported_kols(source_dir=source_dir, output_dir=output_dir, min_signals=1)
+
+    assert called["count"] == 1
+    assert summary["vector_index"]["status"] == "rebuilt"
+
+
+def test_process_pending_imports_rebuild_failure_keeps_import_success(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    output_dir = _build_runtime_dir(tmp_path / "runtime")
+    pending_dir = tmp_path / "pending"
+    source_dir = _build_source_dir(tmp_path / "source")
+    bundle_dir = pending_dir / "bundle-1"
+    shutil.copytree(source_dir, bundle_dir)
+    monkeypatch.setenv("CRYPTO_HELPER_VECTOR_ENABLED", "true")
+
+    def fail_rebuild(self: object) -> object:
+        raise RuntimeError("vector rebuild failure")
+
+    monkeypatch.setattr("crypto_helper.core.import_service.VectorStore.rebuild_index", fail_rebuild)
+
+    summary = process_pending_imports(pending_dir=pending_dir, output_dir=output_dir, min_signals=1)
+
+    assert summary["processed_count"] == 1
+    assert summary["vector_index"]["status"] == "warning"
+    assert "vector rebuild failure" in summary["vector_index"]["warning"]
 
 
 def test_promote_imported_kols_applies_manual_author_mapping(tmp_path: Path) -> None:

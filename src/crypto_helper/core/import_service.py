@@ -23,6 +23,7 @@ from crypto_helper.core.data_loader import (
 )
 from crypto_helper.core.paths import DATA_ENV_VAR, ensure_runtime_data
 from crypto_helper.core.profile_service import refresh_profile
+from crypto_helper.core.vector_store import VectorStore
 from crypto_helper.models.common import DomainError
 from crypto_helper.models.evidence import KOLOpinion, MarketNews, TradeCall, TradeCallEvent
 from crypto_helper.models.registry import (
@@ -361,6 +362,7 @@ def promote_imported_kols(
         after=promoted_summary,
         status="success",
     )
+    promoted_summary["vector_index"] = _rebuild_vector_index(data_root)
     return promoted_summary
 
 
@@ -389,6 +391,7 @@ def process_pending_imports(
         "min_signals": min_signals,
     }
     if not sources:
+        summary["vector_index"] = {"status": "skipped", "reason": "no_new_data"}
         save_json_path(data_root / "reports" / "imports" / "pending_imports_summary.json", summary)
         return summary
 
@@ -419,8 +422,35 @@ def process_pending_imports(
             status="success",
         )
 
+    summary["vector_index"] = _rebuild_vector_index(data_root)
     save_json_path(data_root / "reports" / "imports" / "pending_imports_summary.json", summary)
     return summary
+
+
+def _rebuild_vector_index(data_root: Path) -> dict[str, Any]:
+    store = VectorStore()
+    if not store.enabled:
+        return {"status": "skipped", "reason": "vector_disabled"}
+    try:
+        previous_data_dir = os.getenv(DATA_ENV_VAR)
+        os.environ[DATA_ENV_VAR] = str(data_root)
+        status = store.rebuild_index()
+        return {
+            "status": "rebuilt",
+            "document_count": status.document_count,
+            "index_path": status.index_path,
+            "backend": status.backend,
+        }
+    except Exception as exc:
+        return {
+            "status": "warning",
+            "warning": f"Vector index rebuild failed: {exc}",
+        }
+    finally:
+        if previous_data_dir is None:
+            os.environ.pop(DATA_ENV_VAR, None)
+        else:
+            os.environ[DATA_ENV_VAR] = previous_data_dir
 
 
 def _load_import_rules() -> ImportRules:
