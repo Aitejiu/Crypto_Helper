@@ -24,6 +24,7 @@ from crypto_helper.models.soul import (
     TradingSoul,
     UpdatePolicy,
 )
+from crypto_helper.services.audit_service import write_registry_audit
 from crypto_helper.services.kol_resolver import resolve_kol
 
 
@@ -153,6 +154,15 @@ def add_mock_kol(
             "allowed_symbols": symbols,
         },
     )
+    write_registry_audit(
+        event_type="registry_add_mock",
+        actor="system",
+        target_type="kol",
+        target_id=entry.kol_id,
+        action="add_mock_kol",
+        after=entry.model_dump(mode="json"),
+        status="success",
+    )
     return {"entry": entry, "mock_only": True, "audit_path": str(audit_path)}
 
 
@@ -167,6 +177,7 @@ def archive_kol(kol_query: str) -> dict[str, Any]:
 def _update_status(kol_query: str, target: KOLStatus, action: str) -> dict[str, Any]:
     registry = _load_registry()
     resolved = require_kol(kol_query)
+    before_entry = resolved.model_dump(mode="json")
     updated: KOLRegistryEntry | None = None
     for index, entry in enumerate(registry.kols):
         if entry.kol_id == resolved.kol_id:
@@ -185,6 +196,16 @@ def _update_status(kol_query: str, target: KOLStatus, action: str) -> dict[str, 
             "status": updated.status,
             "mock_only": True,
         },
+    )
+    write_registry_audit(
+        event_type=f"registry_{action}",
+        actor="system",
+        target_type="kol",
+        target_id=updated.kol_id,
+        action=action,
+        before=before_entry,
+        after=updated.model_dump(mode="json"),
+        status="success",
     )
     return {"entry": updated, "mock_only": True, "audit_path": str(audit_path)}
 

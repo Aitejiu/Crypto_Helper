@@ -66,6 +66,21 @@ def test_import_core_tables_cli_returns_json(cli_runner: CliRunner, tmp_path: Pa
     assert payload["files_written"]["mock/trade_calls.json"] == 1
 
 
+def test_import_core_tables_accepts_missing_trade_call_events(tmp_path: Path) -> None:
+    source_dir = _build_source_dir(tmp_path / "source")
+    (source_dir / "trade_call_events.csv").unlink()
+    output_dir = tmp_path / "output"
+
+    summary = import_core_tables(source_dir=source_dir, output_dir=output_dir)
+
+    trade_events = json.loads(
+        (output_dir / "mock" / "trade_call_events.json").read_text(encoding="utf-8")
+    )
+    assert trade_events == []
+    assert summary["source_rows"]["trade_call_events.csv"] == 0
+    assert summary["missing_optional_files"] == ["trade_call_events.csv"]
+
+
 def test_promote_imported_kols_creates_registry_entries(tmp_path: Path) -> None:
     source_dir = _build_source_dir(tmp_path / "source")
     output_dir = _build_runtime_dir(tmp_path / "runtime")
@@ -163,6 +178,26 @@ def test_process_pending_imports_consumes_bundle_directory(tmp_path: Path) -> No
     assert summary["processed_count"] == 1
     assert summary["deleted_count"] == 1
     assert not bundle_dir.exists()
+
+
+def test_process_pending_imports_consumes_root_csvs_without_events(tmp_path: Path) -> None:
+    output_dir = _build_runtime_dir(tmp_path / "runtime")
+    pending_dir = tmp_path / "pending"
+    source_dir = _build_source_dir(tmp_path / "source")
+    pending_dir.mkdir(parents=True, exist_ok=True)
+    for csv_path in source_dir.glob("*.csv"):
+        if csv_path.name != "trade_call_events.csv":
+            shutil.copy2(csv_path, pending_dir / csv_path.name)
+
+    summary = process_pending_imports(pending_dir=pending_dir, output_dir=output_dir, min_signals=1)
+
+    assert summary["has_new_data"] is True
+    assert summary["processed_count"] == 1
+    assert not any(pending_dir.glob("*.csv"))
+    trade_events = json.loads(
+        (output_dir / "mock" / "trade_call_events.json").read_text(encoding="utf-8")
+    )
+    assert trade_events == []
 
 
 def test_promote_imported_kols_applies_manual_author_mapping(tmp_path: Path) -> None:

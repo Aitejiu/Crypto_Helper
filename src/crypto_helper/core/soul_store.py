@@ -10,6 +10,7 @@ from crypto_helper.core.registry_service import require_kol
 from crypto_helper.models.common import DomainError
 from crypto_helper.models.registry import KOLStatus
 from crypto_helper.models.soul import KOLSoul, SoulPatch
+from crypto_helper.services.audit_service import write_profile_audit
 
 
 def get_soul(kol_query: str) -> dict[str, Any]:
@@ -76,6 +77,15 @@ def generate_soul_patch_mock(kol_query: str, observed_behavior: str) -> dict[str
             "mock_only": True,
         },
     )
+    write_profile_audit(
+        event_type="soul_patch_generated",
+        actor="system",
+        target_type="kol_soul",
+        target_id=entry.kol_id,
+        action="generate_soul_patch_mock",
+        after=patch.model_dump(mode="json"),
+        status="success",
+    )
     return {"patch": patch, "audit_path": str(audit_path), "mock_only": True}
 
 
@@ -114,6 +124,15 @@ def apply_soul_patch_mock(kol_query: str, patch_id: str | None = None) -> dict[s
             "patch_id": patch.patch_id,
             "mock_only": True,
         },
+    )
+    write_profile_audit(
+        event_type="soul_patch_applied",
+        actor="system",
+        target_type="kol_soul",
+        target_id=entry.kol_id,
+        action="apply_soul_patch_mock",
+        after={"patch_id": patch.patch_id},
+        status="success",
     )
     limitations: list[str] = []
     if entry.status == KOLStatus.ARCHIVED:

@@ -41,6 +41,7 @@ from crypto_helper.models.soul import (
     TradingSoul,
     UpdatePolicy,
 )
+from crypto_helper.services.audit_service import write_import_audit
 
 IMPORT_RULES_PATH = (
     Path(__file__).resolve().parent.parent
@@ -91,10 +92,14 @@ def import_core_tables(
         stale_message_blocks.unlink()
 
     trade_call_rows = _read_csv(source_root / "kol_trade_calls.csv")
-    trade_event_rows = _read_csv(source_root / "trade_call_events.csv")
+    trade_event_path = source_root / "trade_call_events.csv"
+    trade_event_rows = _read_csv(trade_event_path) if trade_event_path.exists() else []
     opinion_rows = _read_csv(source_root / "kol_opinions.csv")
     analysis_rows = _read_csv(source_root / "market_analysis.csv")
     news_rows = _read_csv(source_root / "market_news.csv")
+    missing_optional_files = [
+        filename for filename in _optional_csv_filenames() if not (source_root / filename).exists()
+    ]
 
     trade_calls, trade_summary = _build_trade_calls(trade_call_rows, rules)
     trade_lookup = {trade_call.id: trade_call for trade_call in trade_calls}
@@ -171,7 +176,12 @@ def import_core_tables(
             "Candidate KOL ids are generated from source authors for future registry promotion.",
             "market_analysis is merged into mock/opinions.json as structured analysis evidence.",
             "message_blocks and discord_messages remain source material and are not imported.",
+            (
+                "trade_call_events.csv is optional; missing event tables produce "
+                "an empty event output."
+            ),
         ],
+        "missing_optional_files": missing_optional_files,
     }
     save_json_path(data_root / "reports" / "imports" / "core_tables_import_summary.json", summary)
     return summary
@@ -342,6 +352,15 @@ def promote_imported_kols(
                 "mock_only": True,
             },
         )
+    write_import_audit(
+        event_type="import_promote_kols",
+        actor="system",
+        target_type="import_batch",
+        target_id=str(source_dir),
+        action="promote_imported_kols",
+        after=promoted_summary,
+        status="success",
+    )
     return promoted_summary
 
 
@@ -389,6 +408,15 @@ def process_pending_imports(
                 "promoted_count": result["promoted_count"],
                 "rewritten_mock_rows": result["rewritten_mock_rows"],
             }
+        )
+        write_import_audit(
+            event_type="import_process_pending",
+            actor="system",
+            target_type="pending_source",
+            target_id=str(source.cleanup_path),
+            action="process_pending_imports",
+            after=summary["processed_sources"][-1],
+            status="success",
         )
 
     save_json_path(data_root / "reports" / "imports" / "pending_imports_summary.json", summary)
@@ -464,7 +492,7 @@ def _contains_required_csvs(path: Path) -> bool:
 def _delete_processed_source(source: PendingImportSource, pending_root: Path) -> None:
     cleanup_path = source.cleanup_path
     if cleanup_path == pending_root:
-        for filename in _required_csv_filenames():
+        for filename in _all_import_csv_filenames():
             file_path = pending_root / filename
             if file_path.exists():
                 file_path.unlink()
@@ -476,11 +504,18 @@ def _delete_processed_source(source: PendingImportSource, pending_root: Path) ->
 def _required_csv_filenames() -> tuple[str, ...]:
     return (
         "kol_trade_calls.csv",
-        "trade_call_events.csv",
         "kol_opinions.csv",
         "market_analysis.csv",
         "market_news.csv",
     )
+
+
+def _optional_csv_filenames() -> tuple[str, ...]:
+    return ("trade_call_events.csv",)
+
+
+def _all_import_csv_filenames() -> tuple[str, ...]:
+    return (*_required_csv_filenames(), *_optional_csv_filenames())
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:

@@ -16,6 +16,7 @@ from crypto_helper.core.registry_service import require_kol
 from crypto_helper.models.evidence import EvidenceRef, KOLOpinion, TradeCall, TradeCallEvent
 from crypto_helper.models.persona import KOLProfile
 from crypto_helper.models.registry import KOLStatus
+from crypto_helper.services.audit_service import write_profile_audit
 
 
 def get_profile(kol_query: str) -> dict[str, Any]:
@@ -61,6 +62,15 @@ def refresh_profile(kol_query: str) -> dict[str, Any]:
         "mock_only": True,
     }
     audit_path = append_jsonl("audit/profile_updates.jsonl", audit_record)
+    write_profile_audit(
+        event_type="profile_refresh",
+        actor="system",
+        target_type="kol_profile",
+        target_id=entry.kol_id,
+        action="refresh_profile",
+        after=profile.model_dump(mode="json"),
+        status="success",
+    )
     return {
         "profile": profile,
         "summary": {
