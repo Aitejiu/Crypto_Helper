@@ -41,24 +41,27 @@ Use this skill when:
 2. For every inbound request, prefer calling `crypto_helper_manager_handle_request` first.
 3. Pass the current request text plus normalized context fields when the runtime exposes them:
    `channel`, `chat_id`, `user_id`, optional `guild_id`, `message_id`, `timestamp`, `locale`, `visibility`, `is_admin_context`.
-4. Treat the returned `workflow_id`, `delegation_target`, `execution_plan`, and `safety_decisions` as the source of truth for routing.
-5. Only fall back to direct `crypto_helper_security_review` or `crypto_helper_registry_lookup` when the unified manager tool is unavailable.
-6. Never invent a KOL that is not found in the registry.
-7. If lookup resolves a typo or fuzzy name with high confidence, continue using the canonical registry display name.
-8. If lookup is ambiguous or fails, stop and ask the user to inspect the KOL list for the exact name.
-9. Never treat each KOL as a dedicated OpenClaw agent.
-10. Both Core KOL and Dynamic KOL persona flows are handled by `persona-runtime-agent`.
-11. If a KOL does not exist, do not call `persona-runtime-agent`.
-12. Disabled KOLs do not allow persona simulation.
-13. Archived KOLs allow historical analysis only, and that archived status must be stated.
-14. Persona QA delegates to `persona-runtime-agent`.
-15. KOL weekly reports and market daily reports delegate to `report-agent`.
-16. High-risk refusal or downgrade flows delegate to `security-agent`.
-17. Simple stats queries can be handled directly by `manager-agent` with `stats-query` and stats tools.
-18. Complex stats queries may delegate to `report-agent`, with future extension to `stats-agent`.
-19. Workflow 12-16 must not run through `manager-agent`.
-20. `manager-agent` must reply with no permission for workflow 12-16 requests.
-21. `manager-admin` may handle workflow 12-16 only through trusted private admin context.
+4. Treat the returned `workflow_id`, `delegation_target`, `execution_plan`, `safety_decisions`, and `response_mode` as the source of truth for routing.
+5. If `response_mode` is `direct_result`, answer directly from `direct_result` without re-routing through other tools.
+6. If `response_mode` is `delegate`, hand off to the returned `delegate_request.target_agent` and preserve the structured inputs.
+7. If `response_mode` is `blocked` or `refusal`, return the provided response payload and stop.
+8. Only fall back to direct `crypto_helper_security_review` or `crypto_helper_registry_lookup` when the unified manager tool is unavailable.
+9. Never invent a KOL that is not found in the registry.
+10. If lookup resolves a typo or fuzzy name with high confidence, continue using the canonical registry display name.
+11. If lookup is ambiguous or fails, stop and ask the user to inspect the KOL list for the exact name.
+12. Never treat each KOL as a dedicated OpenClaw agent.
+13. Both Core KOL and Dynamic KOL persona flows are handled by `persona-runtime-agent`.
+14. If a KOL does not exist, do not call `persona-runtime-agent`.
+15. Disabled KOLs do not allow persona simulation.
+16. Archived KOLs allow historical analysis only, and that archived status must be stated.
+17. Persona QA delegates to `persona-runtime-agent`.
+18. KOL weekly reports and market daily reports delegate to `report-agent`.
+19. High-risk refusal or downgrade flows delegate to `security-agent`.
+20. Simple stats queries can be handled directly by `manager-agent` with `stats-query` and stats tools.
+21. Complex stats queries may delegate to `report-agent`, with future extension to `stats-agent`.
+22. Workflow 12-16 must not run through `manager-agent`.
+23. `manager-agent` must reply with no permission for workflow 12-16 requests.
+24. `manager-admin` may handle workflow 12-16 only through trusted private admin context.
 
 ### Workflow 0: List KOLs
 

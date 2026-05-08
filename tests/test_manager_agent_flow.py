@@ -18,7 +18,9 @@ def test_manager_flow_routes_persona_request(runtime_data_dir: object) -> None:
 
     assert result.workflow_id == "kol_persona"
     assert result.delegation_target == "persona-runtime-agent"
-    assert result.response_mode == "planned"
+    assert result.response_mode == "delegate"
+    assert result.delegate_request is not None
+    assert result.delegate_request["target_agent"] == "persona-runtime-agent"
 
 
 def test_manager_flow_blocks_admin_request_in_public_context(runtime_data_dir: object) -> None:
@@ -52,3 +54,22 @@ def test_manager_flow_routes_market_report(runtime_data_dir: object) -> None:
 
     assert result.workflow_id == "daily_market_report"
     assert result.delegation_target == "report-agent"
+    assert result.response_mode == "delegate"
+
+
+def test_manager_flow_executes_direct_kol_list(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    context = RequestContext(
+        channel="discord",
+        guild_id="guild-3",
+        chat_id="chat-3",
+        user_id="user-4",
+        visibility="public",
+    )
+
+    result = handle_manager_request(context, "当前有哪些正在跟踪的 KOL？")
+
+    assert result.workflow_id == "kol_list"
+    assert result.response_mode == "direct_result"
+    assert result.direct_result is not None
+    assert result.direct_result["items"]

@@ -19,7 +19,9 @@ Primary tools for this workspace:
 Tool usage notes:
 
 - Prefer `crypto_helper_manager_handle_request` as the first tool call for inbound requests.
-- Use the unified manager tool result to decide direct handling vs delegation.
+- Use `response_mode` from the unified manager tool result to decide direct handling vs delegation.
+- `direct_result` means answer immediately from tool output.
+- `delegate_request` means pass the structured handoff to the target agent.
 - Always resolve KOL identity before KOL-specific actions.
 - Security review must precede unsafe, administrative, or advice-like requests.
 - Do not use persona or report output as if it were generated locally when delegation is required.
