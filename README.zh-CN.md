@@ -4,8 +4,6 @@
 
 <h1 align="center">Crypto Helper</h1>
 
----
-
 <p align="center">
   <strong>Your Most Reliable Crypto Information Aggregation and Analysis Assistant</strong>
 </p>
