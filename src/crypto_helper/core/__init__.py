@@ -15,6 +15,7 @@ if TYPE_CHECKING:
         security_review,
         soul_store,
         stats_service,
+        vector_config,
     )
 
 __all__ = [
@@ -28,6 +29,7 @@ __all__ = [
     "security_review",
     "soul_store",
     "stats_service",
+    "vector_config",
 ]
 
 

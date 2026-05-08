@@ -47,6 +47,7 @@ from crypto_helper.core.stats_service import (
     get_kol_performance,
     get_market_summary,
 )
+from crypto_helper.core.vector_store import VectorStore
 from crypto_helper.models.common import DomainError, ok_response, to_jsonable
 from crypto_helper.request_context import RequestContext
 from crypto_helper.security.schemas import SafetyAction, SafetyDecision, SafetyLevel
@@ -68,6 +69,7 @@ report_app = typer.Typer(help="Report operations.")
 security_app = typer.Typer(help="Security operations.")
 import_app = typer.Typer(help="Data import operations.")
 manager_app = typer.Typer(help="Manager entry workflow operations.")
+vector_app = typer.Typer(help="Vector index operations.")
 
 app.add_typer(registry_app, name="registry")
 app.add_typer(soul_app, name="soul")
@@ -79,6 +81,7 @@ app.add_typer(report_app, name="report")
 app.add_typer(security_app, name="security")
 app.add_typer(import_app, name="import")
 app.add_typer(manager_app, name="manager")
+app.add_typer(vector_app, name="vector")
 
 F = TypeVar("F", bound=Callable[[], Any])
 
@@ -500,6 +503,51 @@ def manager_handle_request_command(
     )
 
 
+@vector_app.command("rebuild-index")
+def vector_rebuild_index(
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: VectorStore().rebuild_index())
+
+
+@vector_app.command("index-status")
+def vector_index_status(
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: VectorStore().status())
+
+
+@vector_app.command("search")
+def vector_search(
+    query: str = typer.Option(..., "--query"),
+    kol: str | None = typer.Option(None, "--kol"),
+    symbol: str | None = typer.Option(None, "--symbol"),
+    source_type: str | None = typer.Option(None, "--source-type"),
+    limit: int = typer.Option(10, "--limit"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: {
+            "items": VectorStore().search(
+                query,
+                top_k=limit,
+                filters=_vector_filters(kol, symbol, source_type),
+            ),
+            "query": {
+                "query": query,
+                "kol": kol,
+                "symbol": symbol.upper() if symbol else None,
+                "source_type": source_type,
+                "limit": limit,
+            },
+            "index_status": VectorStore().status(),
+        }
+    )
+
+
 def main() -> None:
     app()
 
@@ -580,3 +628,31 @@ def _build_request_context(
     if timestamp is not None:
         payload["timestamp"] = timestamp
     return RequestContext.model_validate(payload)
+
+
+def _vector_filters(
+    kol: str | None,
+    symbol: str | None,
+    source_type: str | None,
+) -> dict[str, Any] | None:
+    filters: dict[str, Any] = {}
+    if kol:
+        resolution = resolve_kol_query(kol)
+        entry = resolution["entry"]
+        if entry is None:
+            raise DomainError(
+                f"KOL not found: {kol}",
+                code="KOL_AMBIGUOUS_QUERY" if resolution["ambiguous"] else "KOL_NOT_FOUND",
+                metadata={
+                    "query": kol,
+                    "suggestions": resolution["suggestions"],
+                    "hint": resolution["hint"],
+                    "list_command": resolution["list_command"],
+                },
+            )
+        filters["kol_id"] = entry.kol_id
+    if symbol:
+        filters["symbol"] = symbol.upper()
+    if source_type:
+        filters["source_type"] = source_type
+    return filters or None

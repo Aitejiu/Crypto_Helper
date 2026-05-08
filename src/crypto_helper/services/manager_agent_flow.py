@@ -5,10 +5,10 @@ from typing import Any
 
 from pydantic import Field
 
-from crypto_helper.models.common import DomainModel
 from crypto_helper.core.evidence_store import search_evidence
 from crypto_helper.core.registry_service import get_active_kols, resolve_kol_query
 from crypto_helper.core.stats_service import compare_kols, get_kol_performance
+from crypto_helper.models.common import DomainModel
 from crypto_helper.models.registry import KOLRegistryEntry
 from crypto_helper.request_context import RequestContext
 from crypto_helper.security import (

@@ -19,6 +19,7 @@ def test_runtime_data_can_initialize_from_seed(runtime_data_dir: object) -> None
     assert (data_dir / "imports" / "failed").exists()
     assert (data_dir / "imports" / "processed").exists()
     assert (data_dir / "workflow_runs").exists()
+    assert (data_dir / "vector_index").exists()
 
 
 def test_runtime_layout_creates_default_files(runtime_data_dir: object) -> None:
@@ -42,6 +43,13 @@ def test_crypto_helper_data_dir_env_override_works(runtime_data_dir: object) -> 
 def test_default_data_dir_is_repo_local(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CRYPTO_HELPER_DATA_DIR", raising=False)
     assert paths.get_data_dir() == paths.get_project_root() / "crypto_helper_data"
+
+
+def test_vector_index_path_helpers(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    vector_dir = paths.get_vector_index_dir()
+    assert vector_dir == paths.ensure_runtime_data() / "vector_index"
+    assert paths.resolve_vector_index_path("chroma/index") == vector_dir / "chroma/index"
 
 
 def test_every_kol_has_registry_soul_profile_and_evidence(runtime_data_dir: object) -> None:

@@ -104,6 +104,26 @@ def test_version_command(cli_runner: CliRunner) -> None:
         ),
         (["report", "kol", "--kol", "KOL_A", "--range", "7d", "--json"], 0),
         (["report", "daily-market", "--range", "1d", "--json"], 0),
+        (["vector", "rebuild-index", "--json"], 0),
+        (["vector", "index-status", "--json"], 0),
+        (
+            [
+                "vector",
+                "search",
+                "--query",
+                "SOL market risk",
+                "--kol",
+                "KOL_A",
+                "--symbol",
+                "BTC",
+                "--source-type",
+                "opinion",
+                "--limit",
+                "3",
+                "--json",
+            ],
+            0,
+        ),
         (
             [
                 "manager",
@@ -184,6 +204,7 @@ def test_registry_lookup_handles_typo_query(cli_runner: CliRunner) -> None:
         ["registry", "lookup", "--query", "KOL_Z", "--json"],
         ["persona", "ask", "--kol", "KOL_Z", "--question", "What about BTC?", "--json"],
         ["persona", "ask", "--kol", "KOL_DISABLED", "--question", "What about BTC?", "--json"],
+        ["vector", "search", "--query", "test", "--kol", "KOL_Z", "--json"],
     ],
 )
 def test_failure_commands_return_ok_false_json(cli_runner: CliRunner, args: list[str]) -> None:

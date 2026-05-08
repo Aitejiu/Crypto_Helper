@@ -55,6 +55,10 @@ def get_workflow_runs_dir() -> Path:
     return ensure_runtime_data() / "workflow_runs"
 
 
+def get_vector_index_dir() -> Path:
+    return ensure_runtime_data() / "vector_index"
+
+
 def ensure_runtime_data() -> Path:
     seed_dir = get_seed_data_dir()
     data_dir = get_data_dir()
@@ -72,6 +76,10 @@ def ensure_runtime_data() -> Path:
 
 def resolve_runtime_path(relative_path: str) -> Path:
     return ensure_runtime_data() / relative_path
+
+
+def resolve_vector_index_path(relative_path: str) -> Path:
+    return get_vector_index_dir() / relative_path
 
 
 def _copy_missing_seed_content(seed_dir: Path, data_dir: Path) -> None:
@@ -105,6 +113,7 @@ def _ensure_runtime_layout(data_dir: Path) -> None:
         "imports/processed",
         "audit",
         "workflow_runs",
+        "vector_index",
     ):
         (data_dir / relative_path).mkdir(parents=True, exist_ok=True)
     _ensure_default_registry_files(data_dir)
