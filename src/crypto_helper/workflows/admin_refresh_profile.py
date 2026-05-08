@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="admin_refresh_profile",
         workflow_name="Admin Refresh Profile",
         visibility="admin",
+        public_callable=False,
         required_inputs=["kol_query"],
         safety_level="admin_only",
         allowed_agents=["manager-admin"],
@@ -22,4 +23,12 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "profile_refresh_result"},
         fallback_behavior="require_private_admin_context",
         intent_aliases=["refresh_profile", "admin_profile_refresh"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "kol_resolver",
+            "workflow_guard",
+            "tool_execution",
+            "audit_log",
+        ],
     )

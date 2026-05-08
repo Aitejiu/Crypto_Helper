@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 from crypto_helper.models.common import DomainError
+from crypto_helper.workflows.admin_archive_kol import (
+    build_workflow as build_admin_archive_kol_workflow,
+)
+from crypto_helper.workflows.admin_disable_kol import (
+    build_workflow as build_admin_disable_kol_workflow,
+)
 from crypto_helper.workflows.admin_import import build_workflow as build_admin_import_workflow
 from crypto_helper.workflows.admin_promote_kols import (
     build_workflow as build_admin_promote_kols_workflow,
@@ -88,6 +94,8 @@ def _default_workflows() -> list[WorkflowDefinition]:
         build_admin_import_workflow(),
         build_admin_refresh_profile_workflow(),
         build_admin_promote_kols_workflow(),
+        build_admin_disable_kol_workflow(),
+        build_admin_archive_kol_workflow(),
         build_security_refusal_workflow(),
     ]
 
@@ -97,6 +105,7 @@ def build_kol_list_workflow() -> WorkflowDefinition:
         workflow_id="kol_list",
         workflow_name="KOL List",
         visibility="public",
+        public_callable=True,
         required_inputs=[],
         safety_level="standard",
         allowed_agents=["manager-agent"],
@@ -104,4 +113,11 @@ def build_kol_list_workflow() -> WorkflowDefinition:
         output_schema={"type": "registry_list_result"},
         fallback_behavior="return_active_kol_list",
         intent_aliases=["list_kols", "tracked_kols"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

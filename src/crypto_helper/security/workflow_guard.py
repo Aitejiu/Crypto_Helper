@@ -14,6 +14,13 @@ def check_workflow_permission(
     request_context: RequestContext,
     workflow_definition: WorkflowDefinition,
 ) -> SafetyDecision:
+    if not workflow_definition.public_callable and not request_context.is_admin_context:
+        return _decision(
+            action=SafetyAction.REQUIRE_ADMIN,
+            level=SafetyLevel.ADMIN_ONLY,
+            reason="This workflow is not callable from public or non-admin context.",
+            issue_code="public_callable_denied",
+        )
     if workflow_definition.visibility == "admin" and not request_context.is_admin_context:
         return _decision(
             action=SafetyAction.REQUIRE_ADMIN,

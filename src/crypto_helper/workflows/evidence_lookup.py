@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="evidence_lookup",
         workflow_name="Evidence Lookup",
         visibility="public",
+        public_callable=True,
         required_inputs=["kol_query"],
         safety_level="standard",
         allowed_agents=["manager-agent", "persona-runtime-agent", "report-agent"],
@@ -22,4 +23,12 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "evidence_search_result"},
         fallback_behavior="return_evidence_limitations",
         intent_aliases=["evidence", "why", "supporting_data"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "kol_resolver",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

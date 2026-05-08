@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="kol_report",
         workflow_name="KOL Report",
         visibility="public",
+        public_callable=True,
         required_inputs=["kol_query"],
         safety_level="guarded",
         allowed_agents=["manager-agent", "report-agent"],
@@ -23,4 +24,12 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "report_result"},
         fallback_behavior="return_report_with_limitations",
         intent_aliases=["report", "weekly_report", "kol_summary"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "kol_resolver",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

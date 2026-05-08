@@ -12,6 +12,7 @@ class WorkflowDefinition(DomainModel):
     workflow_id: str
     workflow_name: str
     visibility: WorkflowVisibility
+    public_callable: bool = True
     required_inputs: list[str]
     safety_level: str
     allowed_agents: list[str]
@@ -19,6 +20,7 @@ class WorkflowDefinition(DomainModel):
     output_schema: dict[str, Any]
     fallback_behavior: str
     intent_aliases: list[str] = []
+    plan_steps: list[str] = []
 
 
 class WorkflowExecutionPlan(DomainModel):
@@ -31,3 +33,4 @@ class WorkflowExecutionPlan(DomainModel):
     output_schema: dict[str, Any]
     fallback_behavior: str
     safety_level: str
+    plan_steps: list[str]

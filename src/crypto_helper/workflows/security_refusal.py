@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="security_refusal",
         workflow_name="Security Refusal",
         visibility="public",
+        public_callable=True,
         required_inputs=["user_message"],
         safety_level="high_risk",
         allowed_agents=["manager-agent", "security-agent"],
@@ -15,4 +16,11 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "security_decision"},
         fallback_behavior="return_safe_alternative",
         intent_aliases=["security", "refusal", "unsafe_request"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

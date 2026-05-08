@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="daily_market_report",
         workflow_name="Daily Market Report",
         visibility="public",
+        public_callable=True,
         required_inputs=[],
         safety_level="standard",
         allowed_agents=["manager-agent", "report-agent"],
@@ -21,4 +22,11 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "report_result"},
         fallback_behavior="return_market_snapshot_with_limitations",
         intent_aliases=["daily_market", "market_report", "today_market"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

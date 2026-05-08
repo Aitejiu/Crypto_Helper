@@ -43,4 +43,5 @@ class WorkflowExecutor:
             output_schema=workflow.output_schema,
             fallback_behavior=workflow.fallback_behavior,
             safety_level=workflow.safety_level,
+            plan_steps=workflow.plan_steps,
         )

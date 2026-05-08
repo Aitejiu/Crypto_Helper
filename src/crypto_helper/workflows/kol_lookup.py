@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="kol_lookup",
         workflow_name="KOL Lookup",
         visibility="public",
+        public_callable=True,
         required_inputs=["kol_query"],
         safety_level="standard",
         allowed_agents=["manager-agent"],
@@ -15,4 +16,12 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "kol_lookup_result"},
         fallback_behavior="return_not_found_or_suggestions",
         intent_aliases=["lookup", "find_kol", "resolve_kol"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "kol_resolver",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

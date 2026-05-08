@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="kol_persona",
         workflow_name="KOL Persona",
         visibility="public",
+        public_callable=True,
         required_inputs=["kol_query", "topic"],
         safety_level="guarded",
         allowed_agents=["manager-agent", "persona-runtime-agent"],
@@ -21,4 +22,12 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "persona_answer"},
         fallback_behavior="refuse_or_return_low_confidence_simulation",
         intent_aliases=["persona", "kol_view", "historical_simulation"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "kol_resolver",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )

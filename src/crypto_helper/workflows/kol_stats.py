@@ -8,6 +8,7 @@ def build_workflow() -> WorkflowDefinition:
         workflow_id="kol_stats",
         workflow_name="KOL Stats",
         visibility="public",
+        public_callable=True,
         required_inputs=["kol_query"],
         safety_level="standard",
         allowed_agents=["manager-agent", "report-agent"],
@@ -20,4 +21,12 @@ def build_workflow() -> WorkflowDefinition:
         output_schema={"type": "stats_result"},
         fallback_behavior="return_historical_stats_only",
         intent_aliases=["stats", "performance", "compare"],
+        plan_steps=[
+            "request_context",
+            "safety_precheck",
+            "kol_resolver",
+            "workflow_guard",
+            "tool_execution",
+            "output_safety_postcheck",
+        ],
     )
