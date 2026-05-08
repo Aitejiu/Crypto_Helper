@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 import pytest
 
 from crypto_helper.core import report_service
-from crypto_helper.models.evidence import EvidenceSearchResult
 from crypto_helper.core.report_service import (
     collect_report_context,
     finalize_report,
@@ -15,6 +15,7 @@ from crypto_helper.core.report_service import (
     validate_report_claims,
 )
 from crypto_helper.models.common import DomainError
+from crypto_helper.models.evidence import EvidenceSearchResult
 from crypto_helper.security.schemas import SafetyAction, SafetyDecision, SafetyLevel
 
 
@@ -50,7 +51,7 @@ def test_collect_report_context_uses_search_evidence(
     called = {"count": 0}
     original = cast(
         Callable[..., EvidenceSearchResult],
-        getattr(report_service, "search_evidence"),
+        report_service.search_evidence,
     )
 
     def wrapped_search_evidence(

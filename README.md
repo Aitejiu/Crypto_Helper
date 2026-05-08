@@ -115,6 +115,26 @@ The system refuses or downgrades requests involving:
 * permission bypass
 * fabricated KOLs or evidence
 
+### 7. Vector Retrieval MVP
+
+The repository now includes a local vector retrieval MVP for semantic evidence
+lookup.
+
+Current design:
+
+- local Chroma persistent index under `./crypto_helper_data/vector_index/chroma/`
+- embedding model defaults to `BAAI/bge-m3`
+- hybrid retrieval combines structured filters, vector recall, and confidence /
+  recency ranking
+
+This layer is designed to improve:
+
+- evidence search
+- market summary observations
+- future report and persona evidence selection
+
+It does not turn the project into a real-time market data system.
+
 ---
 
 ## Usage Scenarios
@@ -151,6 +171,14 @@ The system refuses or downgrades requests involving:
 
 The system will refuse such a request and provide safer alternatives, such as a
 structured summary, public evidence references, or historical statistics.
+
+### Vector retrieval debugging
+
+```bash
+uv run crypto-helper vector rebuild-index --json
+uv run crypto-helper vector index-status --json
+uv run crypto-helper vector search --query "SOL market risk" --json
+```
 
 ---
 
@@ -207,6 +235,10 @@ Core principles:
 4. **Decouple business logic from agent orchestration**  
    The Python layer owns stable business capabilities; the OpenClaw layer owns
    agent execution and channel integration.
+
+5. **Do not index raw private messages**  
+   The vector layer only indexes normalized structured evidence, not raw
+   private messages.
 
 ---
 
@@ -268,6 +300,16 @@ uv run crypto-helper registry list --json
 ```
 
 If these commands return normal JSON output, the Python business layer is ready.
+
+### 3.1 Verify the vector retrieval CLI
+
+```bash
+uv run crypto-helper vector rebuild-index --json
+uv run crypto-helper vector index-status --json
+uv run crypto-helper vector search --query "BTC reclaim invalidation" --json
+```
+
+These commands are intended for local semantic retrieval and debugging.
 
 ---
 

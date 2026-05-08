@@ -105,6 +105,27 @@ uv run crypto-helper stats compare --symbol ETH --range 30d --json
 * 绕过权限；
 * 编造 KOL 或编造 evidence。
 
+### 7. 向量检索
+
+当前仓库已经包含本地向量检索，用于增强语义 evidence 检索。
+
+当前设计：
+
+- 本地 Chroma 持久化索引，路径位于 `./crypto_helper_data/vector_index/chroma/`
+- embedding 模型默认使用 `BAAI/bge-m3`
+- 检索采用 hybrid retrieval：
+  - 结构化过滤
+  - 向量召回
+  - confidence / recency 重排
+
+这一层主要用于增强：
+
+- evidence search
+- market summary 的相关 observations
+- 后续 report / persona 的 evidence 选择
+
+它不会把项目变成实时行情系统。
+
 ---
 
 ## 使用场景
@@ -140,6 +161,14 @@ uv run crypto-helper stats compare --symbol ETH --range 30d --json
 ```
 
 系统会拒绝该请求，并提供安全替代方案，例如输出结构化摘要、公开 evidence 或统计结果。
+
+### 向量检索调试
+
+```bash
+uv run crypto-helper vector rebuild-index --json
+uv run crypto-helper vector index-status --json
+uv run crypto-helper vector search --query "SOL market risk" --json
+```
 
 ---
 
@@ -191,6 +220,9 @@ structured response with evidence / confidence / limitations
 
 4. **业务逻辑与 Agent 编排解耦**
    Python 层负责稳定的业务能力，OpenClaw 层负责 Agent 执行和渠道接入。
+
+5. **不索引 raw private messages**
+   向量层只允许索引已归一化的结构化 evidence，不索引私密原始消息。
 
 ---
 
@@ -252,6 +284,16 @@ uv run crypto-helper registry list --json
 ```
 
 如果命令正常返回 JSON，说明 Python 业务层可用。
+
+### 3.1 验证向量检索 CLI
+
+```bash
+uv run crypto-helper vector rebuild-index --json
+uv run crypto-helper vector index-status --json
+uv run crypto-helper vector search --query "BTC reclaim invalidation" --json
+```
+
+这些命令用于本地语义检索和调试，不代表实时市场数据。
 
 ---
 

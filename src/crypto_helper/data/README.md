@@ -9,6 +9,7 @@ It covers:
 - canonical KOL mapping
 - runtime output formats
 - pending queue semantics
+- vector indexing inputs and rebuild semantics
 
 The goal is to make the import pipeline reproducible and understandable for
 other developers.
@@ -69,6 +70,17 @@ Runtime promoted outputs under:
   kols/<kol_id>/evidence.json
 ```
 
+### 5. Vector index layer
+
+Runtime vector index files live under:
+
+```text
+./crypto_helper_data/vector_index/
+  chroma/
+```
+
+The vector layer is local, persistent, and used for semantic retrieval.
+
 ## Required Input Batch Files
 
 Each batch must contain these files:
@@ -85,6 +97,24 @@ Current importer does **not** consume:
 
 - `message_blocks.csv`
 - `discord_messages.csv`
+
+Raw private message sources are not indexed into the vector layer.
+
+## Data Entering the Vector Index
+
+Current vector-indexed inputs are:
+
+- `kols/<kol_id>/evidence.json`
+- `mock/opinions.json`
+- `mock/news.json`
+
+Current non-indexed raw sources include:
+
+- `discord_messages.csv`
+- `message_blocks.csv`
+- any raw private message export
+
+The vector layer only indexes normalized structured evidence.
 
 ## Input File Contracts
 
@@ -283,6 +313,17 @@ What happens:
    - `kols/<kol_id>/evidence.json`
 6. refresh KOL profiles
 7. emit `promoted_kols_summary.json`
+
+### Phase 4: Vector index rebuild
+
+After successful KOL promotion or pending-batch processing, the repository can
+rebuild the local vector index.
+
+Current semantics:
+
+- if vector retrieval is disabled, rebuild is skipped
+- if vector rebuild fails, import still succeeds
+- if rebuild succeeds, the local Chroma index is refreshed
 
 ## Pending Queue Processing
 
