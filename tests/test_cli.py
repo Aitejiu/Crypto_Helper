@@ -142,6 +142,9 @@ def test_version_command(cli_runner: CliRunner) -> None:
             ],
             0,
         ),
+        (["queue", "enqueue-demo", "--json"], 0),
+        (["queue", "list-pending", "--json"], 0),
+        (["queue", "dispatch-next", "--json"], 0),
         (
             [
                 "security",
@@ -216,3 +219,15 @@ def test_failure_commands_return_ok_false_json(cli_runner: CliRunner, args: list
     assert payload["code"]
     if payload["code"] in {"KOL_NOT_FOUND", "KOL_AMBIGUOUS_QUERY"}:
         assert payload["metadata"]["hint"] == "查看 KOL 列表，确认具体名字。"
+
+
+def test_queue_show_and_retry_commands(cli_runner: CliRunner) -> None:
+    enqueue_result = cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    enqueue_payload = json.loads(enqueue_result.output)
+    task_id = enqueue_payload["result"]["task_id"]
+
+    show_result = cli_runner.invoke(app, ["queue", "show-task", "--task-id", task_id, "--json"])
+    show_payload = json.loads(show_result.output)
+    assert show_result.exit_code == 0
+    assert show_payload["ok"] is True
+    assert show_payload["task"]["task_id"] == task_id

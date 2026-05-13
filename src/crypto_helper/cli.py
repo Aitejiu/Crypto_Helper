@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 import json
+import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
 import typer
 
 from crypto_helper import __version__
+from crypto_helper.agent_runtime.orchestrator import process_next_queued_workflow
+from crypto_helper.agent_runtime.queue import (
+    enqueue_task,
+    get_task,
+    get_task_result,
+    list_pending_tasks,
+    retry_task,
+)
+from crypto_helper.agent_runtime.schemas import DelegationTask, QueueStatus
 from crypto_helper.core.data_loader import load_json_path
 from crypto_helper.core.evidence_store import (
     query_events,
@@ -70,6 +81,7 @@ security_app = typer.Typer(help="Security operations.")
 import_app = typer.Typer(help="Data import operations.")
 manager_app = typer.Typer(help="Manager entry workflow operations.")
 vector_app = typer.Typer(help="Vector index operations.")
+queue_app = typer.Typer(help="Async queue debugging operations.")
 
 app.add_typer(registry_app, name="registry")
 app.add_typer(soul_app, name="soul")
@@ -82,6 +94,7 @@ app.add_typer(security_app, name="security")
 app.add_typer(import_app, name="import")
 app.add_typer(manager_app, name="manager")
 app.add_typer(vector_app, name="vector")
+app.add_typer(queue_app, name="queue")
 
 F = TypeVar("F", bound=Callable[[], Any])
 
@@ -546,6 +559,83 @@ def vector_search(
             "index_status": VectorStore().status(),
         }
     )
+
+
+@queue_app.command("enqueue-demo")
+def queue_enqueue_demo(
+    workflow_id: str = typer.Option("kol_persona", "--workflow-id"),
+    target_agent: str = typer.Option("persona-runtime-agent", "--target-agent"),
+    kol: str = typer.Option("KOL_A", "--kol"),
+    message: str = typer.Option(
+        "If BTC breaks 62000, what might this KOL infer?",
+        "--message",
+    ),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: enqueue_task(
+            DelegationTask(
+                task_id=f"task_{uuid.uuid4().hex[:12]}",
+                created_at=datetime.now(UTC),
+                workflow_run_id=f"run_demo_{uuid.uuid4().hex[:12]}",
+                workflow_id=workflow_id,
+                source_agent="manager-agent",
+                target_agent=target_agent,
+                request_context=RequestContext(
+                    channel="discord",
+                    guild_id="demo-guild",
+                    chat_id="demo-chat",
+                    user_id="demo-user",
+                    visibility="public",
+                ),
+                inputs={"kol_query": kol, "topic": message, "question": message},
+                suggested_tools=[],
+                priority=10,
+                status=QueueStatus.PENDING,
+            )
+        )
+    )
+
+
+@queue_app.command("list-pending")
+def queue_list_pending(
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: {"items": list_pending_tasks()})
+
+
+@queue_app.command("dispatch-next")
+def queue_dispatch_next(
+    target_agent: str | None = typer.Option(None, "--target-agent"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: process_next_queued_workflow(target_agent=target_agent))
+
+
+@queue_app.command("show-task")
+def queue_show_task(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: {
+            "task": get_task(task_id),
+            "result": get_task_result(task_id),
+        }
+    )
+
+
+@queue_app.command("retry-task")
+def queue_retry_task(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: retry_task(task_id))
 
 
 def main() -> None:
