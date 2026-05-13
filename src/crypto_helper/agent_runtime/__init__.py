@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from crypto_helper.agent_runtime.openclaw_wakeup import wake_queue_dispatcher_agent
 from crypto_helper.agent_runtime.orchestrator import (
     process_next_queued_workflow,
     process_queued_workflows_until_empty,
@@ -54,6 +55,7 @@ __all__ = [
     "retry_task",
     "process_next_queued_workflow",
     "process_queued_workflows_until_empty",
+    "wake_queue_dispatcher_agent",
     "acquire_watcher_lock",
     "refresh_watcher_lock",
     "release_watcher_lock",
