@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import re
+import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import Field
 
+from crypto_helper.agent_runtime.queue import enqueue_task
+from crypto_helper.agent_runtime.schemas import DelegationTask, QueueStatus
 from crypto_helper.core.evidence_store import search_evidence
 from crypto_helper.core.registry_service import get_active_kols, resolve_kol_query
 from crypto_helper.core.stats_service import compare_kols, get_kol_performance
@@ -116,6 +120,21 @@ def handle_manager_request(
         user_message=user_message,
         resolved_entities=entity_resolution,
     )
+    task = enqueue_task(
+        DelegationTask(
+            task_id=f"task_{uuid.uuid4().hex[:12]}",
+            created_at=datetime.now(UTC),
+            workflow_run_id=run.run_id,
+            workflow_id=workflow_id,
+            source_agent="manager-agent",
+            target_agent=delegate_request["target_agent"],
+            request_context=request_context,
+            inputs=cast_dict(delegate_request.get("inputs", {})),
+            suggested_tools=_cast_string_list(delegate_request.get("suggested_tools", [])),
+            priority=_workflow_priority(workflow_id),
+            status=QueueStatus.PENDING,
+        )
+    )
     postcheck = output_safety_postcheck(
         request_context,
         workflow_id,
@@ -126,15 +145,20 @@ def handle_manager_request(
         },
     )
     append_safety_decision(run.run_id, postcheck.model_dump(mode="json"))
-    finish_workflow_run(run.run_id, final_status="planned")
+    finish_workflow_run(run.run_id, final_status="queued")
     return ManagerFlowResult(
         workflow_id=workflow_id,
         delegation_target=delegate_request["target_agent"],
         execution_plan=plan.model_dump(mode="json"),
         safety_decisions=[*safety_decisions, postcheck.model_dump(mode="json")],
         resolved_entities=entity_resolution,
-        response_mode="delegate",
-        response_payload={"workflow_id": workflow_id},
+        response_mode="queue_enqueued",
+        response_payload={
+            "workflow_id": workflow_id,
+            "task_id": task.task_id,
+            "target_agent": task.target_agent,
+            "queue_status": task.status.value,
+        },
         direct_result=None,
         delegate_request=delegate_request,
         workflow_run_id=run.run_id,
@@ -383,3 +407,23 @@ def _extract_evidence_refs(payload: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
     return any(phrase in text for phrase in phrases)
+
+
+def _workflow_priority(workflow_id: str) -> int:
+    if workflow_id == "security_refusal":
+        return 10
+    if workflow_id.startswith("admin_"):
+        return 20
+    if workflow_id in {"kol_persona", "kol_report", "daily_market_report"}:
+        return 30
+    return 100
+
+
+def cast_dict(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _cast_string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]

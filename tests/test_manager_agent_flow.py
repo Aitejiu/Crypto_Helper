@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from crypto_helper.agent_runtime.queue import get_task
 from crypto_helper.request_context import RequestContext
 from crypto_helper.services.manager_agent_flow import handle_manager_request
 
@@ -18,9 +19,14 @@ def test_manager_flow_routes_persona_request(runtime_data_dir: object) -> None:
 
     assert result.workflow_id == "kol_persona"
     assert result.delegation_target == "persona-runtime-agent"
-    assert result.response_mode == "delegate"
+    assert result.response_mode == "queue_enqueued"
+    assert result.response_payload["queue_status"] == "pending"
+    assert result.response_payload["task_id"]
     assert result.delegate_request is not None
     assert result.delegate_request["target_agent"] == "persona-runtime-agent"
+    queued_task = get_task(result.response_payload["task_id"])
+    assert queued_task is not None
+    assert queued_task.target_agent == "persona-runtime-agent"
 
 
 def test_manager_flow_blocks_admin_request_in_public_context(runtime_data_dir: object) -> None:
@@ -54,7 +60,8 @@ def test_manager_flow_routes_market_report(runtime_data_dir: object) -> None:
 
     assert result.workflow_id == "daily_market_report"
     assert result.delegation_target == "report-agent"
-    assert result.response_mode == "delegate"
+    assert result.response_mode == "queue_enqueued"
+    assert result.response_payload["target_agent"] == "report-agent"
 
 
 def test_manager_flow_executes_direct_kol_list(runtime_data_dir: object) -> None:
