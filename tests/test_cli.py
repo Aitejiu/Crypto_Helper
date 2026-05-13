@@ -126,6 +126,7 @@ def test_version_command(cli_runner: CliRunner) -> None:
         ),
         (["queue", "list-pending", "--json"], 0),
         (["queue", "dispatch-next", "--json"], 0),
+        (["queue", "dispatch-until-empty", "--json"], 0),
         (
             [
                 "manager",
@@ -301,6 +302,47 @@ def test_queue_mark_failed_command(cli_runner: CliRunner) -> None:
     assert failed_payload["task"]["status"] == "failed"
     assert failed_payload["result"]["status"] == "failed"
     assert failed_payload["result"]["error"] == "worker crashed"
+
+
+def test_queue_dispatch_until_empty_empty_queue_returns_ok(cli_runner: CliRunner) -> None:
+    result = cli_runner.invoke(app, ["queue", "dispatch-until-empty", "--json"])
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["result"]["queue_empty"] is True
+    assert payload["result"]["processed_count"] == 0
+
+
+def test_queue_dispatch_until_empty_processes_multiple_tasks(cli_runner: CliRunner) -> None:
+    cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+
+    result = cli_runner.invoke(app, ["queue", "dispatch-until-empty", "--json"])
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["result"]["queue_empty"] is True
+    assert payload["result"]["processed_count"] == 2
+    assert len(payload["result"]["items"]) == 2
+
+
+def test_queue_dispatch_until_empty_respects_max_tasks(cli_runner: CliRunner) -> None:
+    cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+
+    result = cli_runner.invoke(
+        app,
+        ["queue", "dispatch-until-empty", "--max-tasks", "1", "--json"],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["result"]["processed_count"] == 1
+    assert payload["result"]["max_tasks_reached"] is True
+    assert payload["result"]["queue_empty"] is False
 
 
 def test_worker_and_finalize_commands(cli_runner: CliRunner) -> None:

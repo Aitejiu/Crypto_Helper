@@ -10,7 +10,10 @@ from typing import Any, TypeVar
 import typer
 
 from crypto_helper import __version__
-from crypto_helper.agent_runtime.orchestrator import process_next_queued_workflow
+from crypto_helper.agent_runtime.orchestrator import (
+    process_next_queued_workflow,
+    process_queued_workflows_until_empty,
+)
 from crypto_helper.agent_runtime.queue import (
     claim_next_task,
     enqueue_task,
@@ -682,6 +685,23 @@ def queue_dispatch_next(
 ) -> None:
     del json_output
     _emit(lambda: process_next_queued_workflow(target_agent=target_agent))
+
+
+@queue_app.command("dispatch-until-empty")
+def queue_dispatch_until_empty(
+    max_tasks: int = typer.Option(10, "--max-tasks"),
+    max_seconds: int = typer.Option(120, "--max-seconds"),
+    target_agent: str | None = typer.Option(None, "--target-agent"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: process_queued_workflows_until_empty(
+            max_tasks=max_tasks,
+            max_seconds=max_seconds,
+            target_agent=target_agent,
+        )
+    )
 
 
 @queue_app.command("show-task")
