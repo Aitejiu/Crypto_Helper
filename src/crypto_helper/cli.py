@@ -12,13 +12,27 @@ import typer
 from crypto_helper import __version__
 from crypto_helper.agent_runtime.orchestrator import process_next_queued_workflow
 from crypto_helper.agent_runtime.queue import (
+    claim_next_task,
     enqueue_task,
     get_task,
     get_task_result,
     list_pending_tasks,
+    mark_task_done,
+    mark_task_failed,
     retry_task,
 )
-from crypto_helper.agent_runtime.schemas import DelegationTask, QueueStatus
+from crypto_helper.agent_runtime.schemas import (
+    DelegationTask,
+    QueueStatus,
+    WorkerExecutionResult,
+    WorkerExecutionStatus,
+)
+from crypto_helper.agent_runtime.workers import (
+    run_manager_admin_task,
+    run_persona_runtime_task,
+    run_report_task,
+    run_security_task,
+)
 from crypto_helper.core.data_loader import load_json_path
 from crypto_helper.core.evidence_store import (
     query_events,
@@ -82,6 +96,7 @@ import_app = typer.Typer(help="Data import operations.")
 manager_app = typer.Typer(help="Manager entry workflow operations.")
 vector_app = typer.Typer(help="Vector index operations.")
 queue_app = typer.Typer(help="Async queue debugging operations.")
+worker_app = typer.Typer(help="Worker execution operations.")
 
 app.add_typer(registry_app, name="registry")
 app.add_typer(soul_app, name="soul")
@@ -95,6 +110,7 @@ app.add_typer(import_app, name="import")
 app.add_typer(manager_app, name="manager")
 app.add_typer(vector_app, name="vector")
 app.add_typer(queue_app, name="queue")
+app.add_typer(worker_app, name="worker")
 
 F = TypeVar("F", bound=Callable[[], Any])
 
@@ -606,6 +622,59 @@ def queue_list_pending(
     _emit(lambda: {"items": list_pending_tasks()})
 
 
+@queue_app.command("claim-next")
+def queue_claim_next(
+    target_agent: str | None = typer.Option(None, "--target-agent"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: {"task": claim_next_task(target_agent=target_agent)})
+
+
+@queue_app.command("get-task")
+def queue_get_task(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: {"task": get_task(task_id), "result": get_task_result(task_id)})
+
+
+@queue_app.command("mark-done")
+def queue_mark_done_command(
+    task_id: str = typer.Option(..., "--task-id"),
+    target_agent: str = typer.Option(..., "--target-agent"),
+    status: str = typer.Option("completed", "--status"),
+    output_payload_json: str = typer.Option("{}", "--output-payload-json"),
+    evidence_refs_json: str = typer.Option("[]", "--evidence-refs-json"),
+    limitations_json: str = typer.Option("[]", "--limitations-json"),
+    error: str | None = typer.Option(None, "--error"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: _mark_done_payload(
+            task_id=task_id,
+            target_agent=target_agent,
+            status=status,
+            output_payload_json=output_payload_json,
+            evidence_refs_json=evidence_refs_json,
+            limitations_json=limitations_json,
+            error=error,
+        )
+    )
+
+
+@queue_app.command("mark-failed")
+def queue_mark_failed_command(
+    task_id: str = typer.Option(..., "--task-id"),
+    error: str = typer.Option(..., "--error"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: _mark_failed_payload(task_id, error))
+
+
 @queue_app.command("dispatch-next")
 def queue_dispatch_next(
     target_agent: str | None = typer.Option(None, "--target-agent"),
@@ -636,6 +705,51 @@ def queue_retry_task(
 ) -> None:
     del json_output
     _emit(lambda: retry_task(task_id))
+
+
+@worker_app.command("run-persona")
+def worker_run_persona(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: run_persona_runtime_task(_require_task(task_id)))
+
+
+@worker_app.command("run-report")
+def worker_run_report(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: run_report_task(_require_task(task_id)))
+
+
+@worker_app.command("run-security")
+def worker_run_security(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: run_security_task(_require_task(task_id)))
+
+
+@worker_app.command("run-admin")
+def worker_run_admin(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: run_manager_admin_task(_require_task(task_id)))
+
+
+@manager_app.command("finalize-task")
+def manager_finalize_task(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: _finalize_task_payload(task_id))
 
 
 def main() -> None:
@@ -746,3 +860,83 @@ def _vector_filters(
     if source_type:
         filters["source_type"] = source_type
     return filters or None
+
+
+def _require_task(task_id: str) -> DelegationTask:
+    task = get_task(task_id)
+    if task is None:
+        raise DomainError(
+            f"Task not found: {task_id}",
+            code="QUEUE_TASK_NOT_FOUND",
+            metadata={"task_id": task_id},
+        )
+    return task
+
+
+def _mark_done_payload(
+    *,
+    task_id: str,
+    target_agent: str,
+    status: str,
+    output_payload_json: str,
+    evidence_refs_json: str,
+    limitations_json: str,
+    error: str | None,
+) -> dict[str, Any]:
+    result = WorkerExecutionResult(
+        task_id=task_id,
+        target_agent=target_agent,
+        status=WorkerExecutionStatus(status),
+        output_payload=_parse_json_object(output_payload_json),
+        evidence_refs=_parse_json_array(evidence_refs_json),
+        limitations=[str(item) for item in _parse_json_array(limitations_json)],
+        completed_at=datetime.now(UTC),
+        error=error,
+    )
+    mark_task_done(task_id, result)
+    return {"task": get_task(task_id), "result": get_task_result(task_id)}
+
+
+def _mark_failed_payload(task_id: str, error: str) -> dict[str, Any]:
+    mark_task_failed(task_id, error)
+    return {"task": get_task(task_id), "result": get_task_result(task_id)}
+
+
+def _finalize_task_payload(task_id: str) -> Any:
+    from crypto_helper.agent_runtime.schemas import WorkerExecutionResult
+    from crypto_helper.services.manager_response_service import (
+        build_manager_response_from_worker_result,
+    )
+
+    task = _require_task(task_id)
+    raw_result = get_task_result(task_id)
+    if raw_result is None:
+        raise DomainError(
+            f"Task result not found: {task_id}",
+            code="QUEUE_TASK_RESULT_NOT_FOUND",
+            metadata={"task_id": task_id},
+        )
+    result = WorkerExecutionResult.model_validate(raw_result)
+    return build_manager_response_from_worker_result(task, result)
+
+
+def _parse_json_object(payload: str) -> dict[str, Any]:
+    parsed = json.loads(payload)
+    if not isinstance(parsed, dict):
+        raise DomainError(
+            "Expected JSON object payload.",
+            code="INVALID_JSON_OBJECT",
+            metadata={"payload": payload},
+        )
+    return parsed
+
+
+def _parse_json_array(payload: str) -> list[Any]:
+    parsed = json.loads(payload)
+    if not isinstance(parsed, list):
+        raise DomainError(
+            "Expected JSON array payload.",
+            code="INVALID_JSON_ARRAY",
+            metadata={"payload": payload},
+        )
+    return parsed

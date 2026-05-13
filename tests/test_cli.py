@@ -124,6 +124,8 @@ def test_version_command(cli_runner: CliRunner) -> None:
             ],
             0,
         ),
+        (["queue", "list-pending", "--json"], 0),
+        (["queue", "dispatch-next", "--json"], 0),
         (
             [
                 "manager",
@@ -231,3 +233,128 @@ def test_queue_show_and_retry_commands(cli_runner: CliRunner) -> None:
     assert show_result.exit_code == 0
     assert show_payload["ok"] is True
     assert show_payload["task"]["task_id"] == task_id
+
+
+def test_queue_claim_and_mark_commands(cli_runner: CliRunner) -> None:
+    enqueue_result = cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    enqueue_payload = json.loads(enqueue_result.output)
+    task_id = enqueue_payload["result"]["task_id"]
+
+    get_result = cli_runner.invoke(app, ["queue", "get-task", "--task-id", task_id, "--json"])
+    get_payload = json.loads(get_result.output)
+    assert get_result.exit_code == 0
+    assert get_payload["ok"] is True
+    assert get_payload["task"]["task_id"] == task_id
+
+    claim_result = cli_runner.invoke(app, ["queue", "claim-next", "--json"])
+    claim_payload = json.loads(claim_result.output)
+    assert claim_result.exit_code == 0
+    assert claim_payload["ok"] is True
+    assert claim_payload["task"]["task_id"] == task_id
+
+    done_result = cli_runner.invoke(
+        app,
+        [
+            "queue",
+            "mark-done",
+            "--task-id",
+            task_id,
+            "--target-agent",
+            "persona-runtime-agent",
+            "--output-payload-json",
+            '{"answer":"ok"}',
+            "--evidence-refs-json",
+            "[]",
+            "--limitations-json",
+            "[]",
+            "--json",
+        ],
+    )
+    done_payload = json.loads(done_result.output)
+    assert done_result.exit_code == 0
+    assert done_payload["ok"] is True
+    assert done_payload["task"]["status"] == "done"
+
+
+def test_queue_mark_failed_command(cli_runner: CliRunner) -> None:
+    enqueue_result = cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    task_id = json.loads(enqueue_result.output)["result"]["task_id"]
+
+    claim_result = cli_runner.invoke(app, ["queue", "claim-next", "--json"])
+    assert claim_result.exit_code == 0
+
+    failed_result = cli_runner.invoke(
+        app,
+        [
+            "queue",
+            "mark-failed",
+            "--task-id",
+            task_id,
+            "--error",
+            "worker crashed",
+            "--json",
+        ],
+    )
+    failed_payload = json.loads(failed_result.output)
+    assert failed_result.exit_code == 0
+    assert failed_payload["ok"] is True
+    assert failed_payload["task"]["status"] == "failed"
+    assert failed_payload["result"]["status"] == "failed"
+    assert failed_payload["result"]["error"] == "worker crashed"
+
+
+def test_worker_and_finalize_commands(cli_runner: CliRunner) -> None:
+    enqueue_result = cli_runner.invoke(
+        app,
+        [
+            "queue",
+            "enqueue-demo",
+            "--workflow-id",
+            "kol_persona",
+            "--target-agent",
+            "persona-runtime-agent",
+            "--kol",
+            "KOL_A",
+            "--message",
+            "If BTC breaks 62000, what might this KOL infer?",
+            "--json",
+        ],
+    )
+    task_id = json.loads(enqueue_result.output)["result"]["task_id"]
+    cli_runner.invoke(app, ["queue", "claim-next", "--json"])
+
+    worker_result = cli_runner.invoke(
+        app, ["worker", "run-persona", "--task-id", task_id, "--json"]
+    )
+    worker_payload = json.loads(worker_result.output)
+    assert worker_result.exit_code == 0
+    assert worker_payload["ok"] is True
+    assert worker_payload["result"]["status"] == "completed"
+
+    cli_runner.invoke(
+        app,
+        [
+            "queue",
+            "mark-done",
+            "--task-id",
+            task_id,
+            "--target-agent",
+            "persona-runtime-agent",
+            "--output-payload-json",
+            json.dumps(worker_payload["result"]["output_payload"], ensure_ascii=False),
+            "--evidence-refs-json",
+            json.dumps(worker_payload["result"]["evidence_refs"], ensure_ascii=False),
+            "--limitations-json",
+            json.dumps(worker_payload["result"]["limitations"], ensure_ascii=False),
+            "--json",
+        ],
+    )
+
+    finalize_result = cli_runner.invoke(
+        app,
+        ["manager", "finalize-task", "--task-id", task_id, "--json"],
+    )
+    finalize_payload = json.loads(finalize_result.output)
+    assert finalize_result.exit_code == 0
+    assert finalize_payload["ok"] is True
+    assert finalize_payload["result"]["status"] == "completed"

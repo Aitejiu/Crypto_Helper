@@ -4,6 +4,7 @@ import { registerEvidenceTools } from "./tools/evidence.js";
 import { registerManagerTools } from "./tools/manager.js";
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerReportTools } from "./tools/report.js";
+import { registerRuntimeTools } from "./tools/runtime.js";
 import { registerSecurityTools } from "./tools/security.js";
 import { registerSoulTools } from "./tools/soul.js";
 import { registerStatsTools } from "./tools/stats.js";
@@ -21,6 +22,7 @@ export default definePluginEntry({
     registerStatsTools(api);
     registerReportTools(api);
     registerSecurityTools(api);
+    registerRuntimeTools(api);
     registerVectorTools(api);
   },
 });
