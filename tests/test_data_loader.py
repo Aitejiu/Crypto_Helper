@@ -19,6 +19,10 @@ def test_runtime_data_can_initialize_from_seed(runtime_data_dir: object) -> None
     assert (data_dir / "imports" / "failed").exists()
     assert (data_dir / "imports" / "processed").exists()
     assert (data_dir / "workflow_runs").exists()
+    assert (data_dir / "queues" / "pending").exists()
+    assert (data_dir / "queues" / "processing").exists()
+    assert (data_dir / "queues" / "done").exists()
+    assert (data_dir / "queues" / "failed").exists()
     assert (data_dir / "vector_index").exists()
 
 
@@ -50,6 +54,13 @@ def test_vector_index_path_helpers(runtime_data_dir: object) -> None:
     vector_dir = paths.get_vector_index_dir()
     assert vector_dir == paths.ensure_runtime_data() / "vector_index"
     assert paths.resolve_vector_index_path("chroma/index") == vector_dir / "chroma/index"
+
+
+def test_queue_path_helpers(runtime_data_dir: object) -> None:
+    del runtime_data_dir
+    queue_dir = paths.get_queue_dir()
+    assert queue_dir == paths.ensure_runtime_data() / "queues"
+    assert paths.resolve_queue_path("pending/task_1.json") == queue_dir / "pending/task_1.json"
 
 
 def test_every_kol_has_registry_soul_profile_and_evidence(runtime_data_dir: object) -> None:

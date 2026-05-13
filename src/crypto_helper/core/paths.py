@@ -55,6 +55,10 @@ def get_workflow_runs_dir() -> Path:
     return ensure_runtime_data() / "workflow_runs"
 
 
+def get_queue_dir() -> Path:
+    return ensure_runtime_data() / "queues"
+
+
 def get_vector_index_dir() -> Path:
     return ensure_runtime_data() / "vector_index"
 
@@ -80,6 +84,10 @@ def resolve_runtime_path(relative_path: str) -> Path:
 
 def resolve_vector_index_path(relative_path: str) -> Path:
     return get_vector_index_dir() / relative_path
+
+
+def resolve_queue_path(relative_path: str) -> Path:
+    return get_queue_dir() / relative_path
 
 
 def _copy_missing_seed_content(seed_dir: Path, data_dir: Path) -> None:
@@ -113,6 +121,11 @@ def _ensure_runtime_layout(data_dir: Path) -> None:
         "imports/processed",
         "audit",
         "workflow_runs",
+        "queues",
+        "queues/pending",
+        "queues/processing",
+        "queues/done",
+        "queues/failed",
         "vector_index",
     ):
         (data_dir / relative_path).mkdir(parents=True, exist_ok=True)
