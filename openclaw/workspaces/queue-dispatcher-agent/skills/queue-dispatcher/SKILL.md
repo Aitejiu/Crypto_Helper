@@ -4,42 +4,60 @@ Use this skill only for background async delegation queue processing.
 
 ## Purpose
 
-The queue dispatcher consumes queued workflow tasks created by `manager-agent`, runs the correct worker adapter, stores the worker result, and asks the manager finalize layer to produce the final manager-facing response payload.
+The queue dispatcher is a non-public runtime helper. When OpenClaw runtime,
+cron, or a queue watcher wakes this agent, it should drain eligible queued
+workflow tasks through the Python orchestrator and return the structured
+dispatch result to the runtime.
 
-It is not a public chat assistant and must not answer Discord or Telegram users directly.
+It is not a public chat assistant, must not bind to Discord or Telegram, and
+must not answer users directly. The final user-facing output remains owned by
+`manager-agent`.
 
-## Required Flow
+## V3 Required Flow
 
-1. Claim one task with `crypto_helper_queue_claim_next`.
-2. If no task is returned, stop with a no-op status.
-3. Inspect the task with `crypto_helper_queue_get_task` when needed.
-4. Read `target_agent`.
-5. Run exactly one matching worker tool:
-   - `persona-runtime-agent` -> `crypto_helper_worker_run_persona`
-   - `report-agent` -> `crypto_helper_worker_run_report`
-   - `security-agent` -> `crypto_helper_worker_run_security`
-   - `manager-admin` -> `crypto_helper_worker_run_admin`
-6. If the worker result succeeds, store it with `crypto_helper_queue_mark_done`.
-7. If the worker result fails or the target is unsupported, store failure with `crypto_helper_queue_mark_failed`.
-8. After a successful mark-done, call `crypto_helper_manager_finalize_task`.
-9. Return the finalized response payload as structured JSON for the runtime to deliver.
+1. On each runtime, cron, or watcher wakeup, call
+   `crypto_helper_queue_dispatch_until_empty` first.
+2. Pass runtime limits when provided:
+   - `max_tasks`
+   - `max_seconds`
+   - `target_agent`
+3. Treat the tool result as the authoritative dispatch loop result.
+4. Return the structured result to OpenClaw runtime for delivery or logging.
+5. Do not manually loop through claim, worker, mark, or finalize tools during
+   normal operation.
+
+## Debug Fallback
+
+Manual queue and worker tools are available only for operator debugging,
+diagnostics, or fallback when the V3 dispatch loop tool is unavailable:
+
+- `crypto_helper_queue_claim_next`
+- `crypto_helper_queue_get_task`
+- `crypto_helper_queue_mark_done`
+- `crypto_helper_queue_mark_failed`
+- `crypto_helper_worker_run_persona`
+- `crypto_helper_worker_run_report`
+- `crypto_helper_worker_run_security`
+- `crypto_helper_worker_run_admin`
+- `crypto_helper_manager_finalize_task`
+- `crypto_helper_manager_receive_worker_result`
+
+When using fallback tools, preserve queue claim semantics and do not run a
+worker unless a task has been claimed.
 
 ## Boundaries
 
 - Do not access Discord or Telegram directly.
+- Do not bind this agent to Discord or Telegram.
+- Do not output final answers directly to users.
 - Do not invent tasks.
-- Do not bypass queue claim semantics.
-- Do not execute more than one task per dispatch loop unless explicitly instructed by the runtime.
-- Do not call worker tools whose target does not match the claimed task.
+- Do not bypass queue semantics.
+- Do not implement dispatch loops in prompt logic.
 - Do not expose raw private messages.
+- Keep `manager-agent` as the final user-facing output owner.
 
 ## Expected Output
 
-Return a compact structured result with:
-
-- `task_id`
-- `target_agent`
-- `worker_status`
-- `finalize_status`
-- `manager_response`
-- `limitations`
+Return the `DispatchLoopResult` from `crypto_helper_queue_dispatch_until_empty`
+as structured JSON-compatible output, including processed counts, failed counts,
+queue-empty status, loop limit flags, item statuses, and limitations.
