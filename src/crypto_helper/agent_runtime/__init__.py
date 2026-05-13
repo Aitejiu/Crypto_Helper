@@ -18,6 +18,7 @@ from crypto_helper.agent_runtime.queue import (
     mark_task_failed,
     retry_task,
 )
+from crypto_helper.agent_runtime.queue_watcher import watch_queue
 from crypto_helper.agent_runtime.schemas import (
     DelegationTask,
     DispatchLoopItem,
@@ -56,6 +57,7 @@ __all__ = [
     "process_next_queued_workflow",
     "process_queued_workflows_until_empty",
     "wake_queue_dispatcher_agent",
+    "watch_queue",
     "acquire_watcher_lock",
     "refresh_watcher_lock",
     "release_watcher_lock",

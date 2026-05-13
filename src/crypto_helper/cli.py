@@ -24,6 +24,7 @@ from crypto_helper.agent_runtime.queue import (
     mark_task_failed,
     retry_task,
 )
+from crypto_helper.agent_runtime.queue_watcher import watch_queue
 from crypto_helper.agent_runtime.schemas import (
     DelegationTask,
     QueueStatus,
@@ -700,6 +701,27 @@ def queue_dispatch_until_empty(
             max_tasks=max_tasks,
             max_seconds=max_seconds,
             target_agent=target_agent,
+        )
+    )
+
+
+@queue_app.command("watch")
+def queue_watch(
+    poll_interval: float = typer.Option(2, "--poll-interval"),
+    cooldown: float = typer.Option(5, "--cooldown"),
+    lock_ttl: int = typer.Option(60, "--lock-ttl"),
+    once: bool = typer.Option(False, "--once"),
+    max_wakeups: int | None = typer.Option(None, "--max-wakeups"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(
+        lambda: watch_queue(
+            poll_interval=poll_interval,
+            cooldown=cooldown,
+            lock_ttl=lock_ttl,
+            once=once,
+            max_wakeups=max_wakeups,
         )
     )
 

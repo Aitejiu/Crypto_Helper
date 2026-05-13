@@ -127,6 +127,7 @@ def test_version_command(cli_runner: CliRunner) -> None:
         (["queue", "list-pending", "--json"], 0),
         (["queue", "dispatch-next", "--json"], 0),
         (["queue", "dispatch-until-empty", "--json"], 0),
+        (["queue", "watch", "--once", "--json"], 0),
         (
             [
                 "manager",
@@ -343,6 +344,20 @@ def test_queue_dispatch_until_empty_respects_max_tasks(cli_runner: CliRunner) ->
     assert payload["result"]["processed_count"] == 1
     assert payload["result"]["max_tasks_reached"] is True
     assert payload["result"]["queue_empty"] is False
+
+
+def test_queue_watch_lock_active_returns_ok_false(cli_runner: CliRunner) -> None:
+    from crypto_helper.agent_runtime.watcher_lock import acquire_watcher_lock
+
+    assert acquire_watcher_lock(ttl_seconds=60) is True
+
+    result = cli_runner.invoke(app, ["queue", "watch", "--once", "--json"])
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 1
+    assert payload["ok"] is False
+    assert payload["code"] == "QUEUE_WATCHER_LOCK_ACTIVE"
+    assert payload["metadata"]["status"] == "skipped"
 
 
 def test_worker_and_finalize_commands(cli_runner: CliRunner) -> None:
