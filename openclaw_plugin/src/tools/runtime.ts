@@ -1,4 +1,4 @@
-import { readStringParam } from "openclaw/plugin-sdk/core";
+import { readNumberParam, readStringParam } from "openclaw/plugin-sdk/core";
 import { Type } from "typebox";
 
 import { createCliBackedTool, type PluginApi } from "./common.js";
@@ -15,6 +15,21 @@ const queueClaimNextSchema = Type.Object(
 const queueTaskSchema = Type.Object(
   {
     task_id: Type.String({ description: "Delegation task id." }),
+  },
+  { additionalProperties: false },
+);
+
+const queueDispatchUntilEmptySchema = Type.Object(
+  {
+    max_tasks: Type.Optional(
+      Type.Number({ description: "Maximum tasks to process in this dispatch loop.", minimum: 1 }),
+    ),
+    max_seconds: Type.Optional(
+      Type.Number({ description: "Maximum seconds to spend in this dispatch loop.", minimum: 1 }),
+    ),
+    target_agent: Type.Optional(
+      Type.String({ description: "Optional target agent filter for dispatching queued tasks." }),
+    ),
   },
   { additionalProperties: false },
 );
@@ -45,6 +60,34 @@ const queueMarkFailedSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
+export function buildQueueDispatchUntilEmptyArgs(rawParams: Record<string, unknown>): string[] {
+  const args = ["queue", "dispatch-until-empty"];
+  const maxTasks = readNumberParam(rawParams, "max_tasks", { integer: true });
+  const maxSeconds = readNumberParam(rawParams, "max_seconds", { integer: true });
+  const targetAgent = readStringParam(rawParams, "target_agent");
+  if (maxTasks !== undefined) {
+    args.push("--max-tasks", String(maxTasks));
+  }
+  if (maxSeconds !== undefined) {
+    args.push("--max-seconds", String(maxSeconds));
+  }
+  if (targetAgent) {
+    args.push("--target-agent", targetAgent);
+  }
+  return args;
+}
+
+export function buildManagerReceiveWorkerResultArgs(
+  rawParams: Record<string, unknown>,
+): string[] {
+  return [
+    "manager",
+    "receive-worker-result",
+    "--task-id",
+    readStringParam(rawParams, "task_id", { required: true })!,
+  ];
+}
 
 export function registerRuntimeTools(api: PluginApi): void {
   api.registerTool(
@@ -128,6 +171,16 @@ export function registerRuntimeTools(api: PluginApi): void {
 
   api.registerTool(
     createCliBackedTool({
+      name: "crypto_helper_queue_dispatch_until_empty",
+      label: "Queue Dispatch Until Empty",
+      description: "Dispatch queued workflows until the queue is empty or loop limits are reached.",
+      parameters: queueDispatchUntilEmptySchema,
+      buildCommandArgs: buildQueueDispatchUntilEmptyArgs,
+    })(api),
+  );
+
+  api.registerTool(
+    createCliBackedTool({
       name: "crypto_helper_worker_run_persona",
       label: "Worker Run Persona",
       description: "Run the persona worker adapter for a claimed delegation task.",
@@ -198,6 +251,16 @@ export function registerRuntimeTools(api: PluginApi): void {
         "--task-id",
         readStringParam(rawParams, "task_id", { required: true })!,
       ],
+    })(api),
+  );
+
+  api.registerTool(
+    createCliBackedTool({
+      name: "crypto_helper_manager_receive_worker_result",
+      label: "Manager Receive Worker Result",
+      description: "Build a manager-agent handoff from a stored worker result.",
+      parameters: queueTaskSchema,
+      buildCommandArgs: buildManagerReceiveWorkerResultArgs,
     })(api),
   );
 }
