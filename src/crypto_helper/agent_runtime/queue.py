@@ -73,6 +73,22 @@ def list_pending_tasks() -> list[DelegationTask]:
     return list_tasks(QueueStatus.PENDING)
 
 
+def get_queue_counts() -> dict[str, int]:
+    return {
+        status.value: len(list_tasks(status))
+        for status in (
+            QueueStatus.PENDING,
+            QueueStatus.PROCESSING,
+            QueueStatus.DONE,
+            QueueStatus.FAILED,
+        )
+    }
+
+
+def has_pending_tasks() -> bool:
+    return get_queue_counts()[QueueStatus.PENDING.value] > 0
+
+
 def list_tasks(status: QueueStatus) -> list[DelegationTask]:
     tasks: list[DelegationTask] = []
     for path in sorted(_status_dir(status).glob("*.json")):
