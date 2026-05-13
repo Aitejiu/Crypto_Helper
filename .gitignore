@@ -9,3 +9,4 @@ dist/
 build/
 *.egg-info/
 crypto_helper_data/
+openclaw/workspaces/*/.openclaw/
