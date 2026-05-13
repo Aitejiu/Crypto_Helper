@@ -135,6 +135,28 @@ This layer is designed to improve:
 
 It does not turn the project into a real-time market data system.
 
+### 8. Queue Watcher V3 Async Runtime
+
+Long-running or specialist workflows are handled through an async queue rather
+than by making the public `manager-agent` do all work inline.
+
+Current runtime shape:
+
+- `manager-agent` remains the public Discord / Telegram entrypoint.
+- Simple requests can still be answered directly through tools.
+- Complex persona, report, security, or admin workflows are written as
+  `DelegationTask` records in the pending queue.
+- The queue watcher is the primary trigger. It only watches for pending tasks
+  and wakes `queue-dispatcher-agent` when work appears.
+- OpenClaw cron is kept as a fallback trigger, not the main path.
+- `queue-dispatcher-agent` calls `crypto_helper_queue_dispatch_until_empty`
+  instead of manually looping through claim / worker / mark / finalize tools.
+- Worker results are converted into manager handoff payloads.
+- `manager-agent` is the final owner of user-facing output.
+
+This keeps channel delivery and final response ownership in OpenClaw while the
+Python layer owns deterministic queue, worker, and handoff semantics.
+
 ---
 
 ## Usage Scenarios
@@ -218,6 +240,33 @@ crypto-helper Python CLI
 structured response with evidence / confidence / limitations
 ```
 
+For async workflows, the flow adds the Queue Watcher V3 runtime layer:
+
+```text
+User Message
+    |
+    v
+manager-agent
+    |
+    |-- direct tool result, or
+    v
+pending queue
+    |
+    v
+queue watcher
+    |
+    |-- wake queue-dispatcher-agent
+    v
+queue-dispatcher-agent
+    |
+    |-- crypto_helper_queue_dispatch_until_empty
+    v
+worker adapters and manager handoff
+    |
+    v
+manager-agent final user-facing response
+```
+
 Core principles:
 
 1. **Do not impersonate a real KOL**  
@@ -239,6 +288,11 @@ Core principles:
 5. **Do not index raw private messages**  
    The vector layer only indexes normalized structured evidence, not raw
    private messages.
+
+6. **Keep async output routed through the manager**  
+   Background workers and `queue-dispatcher-agent` do not answer users
+   directly. Worker results flow back through manager handoff, and
+   `manager-agent` remains the final user-facing response owner.
 
 ---
 

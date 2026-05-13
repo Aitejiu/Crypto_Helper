@@ -126,6 +126,28 @@ uv run crypto-helper stats compare --symbol ETH --range 30d --json
 
 它不会把项目变成实时行情系统。
 
+### 8. Queue Watcher V3 异步运行链路
+
+耗时较长或需要专家 Agent 的 workflow 不再要求公开入口
+`manager-agent` 同步完成全部工作，而是进入异步队列。
+
+当前运行形态：
+
+- `manager-agent` 仍然是 Discord / Telegram 的公开入口。
+- 简单请求仍可由 `manager-agent` 直接调用工具返回。
+- 复杂 persona、report、security、admin workflow 会写入 pending queue。
+- queue watcher 是主触发器，只负责监听 pending queue，并在有任务时唤醒
+  `queue-dispatcher-agent`。
+- OpenClaw cron 保留为 fallback，不是主链路。
+- `queue-dispatcher-agent` 只调用
+  `crypto_helper_queue_dispatch_until_empty`，不再由模型手动循环
+  claim / worker / mark / finalize。
+- worker result 会转换成 manager handoff payload。
+- `manager-agent` 是最终用户可见输出的归口。
+
+这样可以把频道投递和最终回复权保留在 OpenClaw / manager 层，同时让
+Python 层负责确定性的队列、worker 和 handoff 语义。
+
 ---
 
 ## 使用场景
@@ -207,6 +229,33 @@ crypto-helper Python CLI
 structured response with evidence / confidence / limitations
 ```
 
+对于异步 workflow，会额外经过 Queue Watcher V3 运行层：
+
+```text
+User Message
+    |
+    v
+manager-agent
+    |
+    |-- direct tool result, or
+    v
+pending queue
+    |
+    v
+queue watcher
+    |
+    |-- wake queue-dispatcher-agent
+    v
+queue-dispatcher-agent
+    |
+    |-- crypto_helper_queue_dispatch_until_empty
+    v
+worker adapters and manager handoff
+    |
+    v
+manager-agent final user-facing response
+```
+
 核心原则：
 
 1. **不冒充真实 KOL**
@@ -223,6 +272,10 @@ structured response with evidence / confidence / limitations
 
 5. **不索引 raw private messages**
    向量层只允许索引已归一化的结构化 evidence，不索引私密原始消息。
+
+6. **异步输出仍由 manager 归口**
+   后台 worker 和 `queue-dispatcher-agent` 不直接回复用户。worker result
+   会通过 manager handoff 回流，最终由 `manager-agent` 输出用户可见回复。
 
 ---
 
