@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from crypto_helper.agent_runtime.orchestrator import process_next_queued_workflow
+from crypto_helper.agent_runtime.orchestrator import (
+    process_next_queued_workflow,
+    process_queued_workflows_until_empty,
+)
 from crypto_helper.agent_runtime.queue import (
     claim_next_task,
     enqueue_task,
@@ -40,4 +43,5 @@ __all__ = [
     "list_tasks",
     "retry_task",
     "process_next_queued_workflow",
+    "process_queued_workflows_until_empty",
 ]
