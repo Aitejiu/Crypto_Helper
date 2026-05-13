@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from crypto_helper.agent_runtime.schemas import (
     DelegationTask,
@@ -69,10 +70,37 @@ def get_task(task_id: str) -> DelegationTask | None:
 
 
 def list_pending_tasks() -> list[DelegationTask]:
+    return list_tasks(QueueStatus.PENDING)
+
+
+def list_tasks(status: QueueStatus) -> list[DelegationTask]:
     tasks: list[DelegationTask] = []
-    for path in sorted(_status_dir(QueueStatus.PENDING).glob("*.json")):
+    for path in sorted(_status_dir(status).glob("*.json")):
+        if path.name.endswith(".result.json"):
+            continue
         tasks.append(DelegationTask.model_validate(load_json_path(path)))
     return tasks
+
+
+def get_task_result(task_id: str) -> dict[str, Any] | None:
+    for status in (QueueStatus.DONE, QueueStatus.FAILED):
+        path = _result_path(status, task_id)
+        if path.exists():
+            return cast(dict[str, Any], load_json_path(path))
+    return None
+
+
+def retry_task(task_id: str) -> DelegationTask:
+    task = _load_task_from_status(QueueStatus.FAILED, task_id)
+    retried = task.model_copy(update={"status": QueueStatus.PENDING})
+    failed_path = _task_path(QueueStatus.FAILED, task_id)
+    if failed_path.exists():
+        failed_path.unlink()
+    failed_result_path = _result_path(QueueStatus.FAILED, task_id)
+    if failed_result_path.exists():
+        failed_result_path.unlink()
+    save_json_path(_task_path(QueueStatus.PENDING, task_id), retried.model_dump(mode="json"))
+    return retried
 
 
 def _queue_root() -> Path:

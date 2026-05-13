@@ -17,7 +17,7 @@ from crypto_helper.core.security_review import review_text
 
 
 def run_persona_runtime_task(task: DelegationTask) -> WorkerExecutionResult:
-    kol_query = str(task.inputs["kol_query"])
+    kol_query = str(task.inputs.get("kol_query") or task.inputs.get("kol") or "")
     question = str(task.inputs.get("topic") or task.inputs.get("question") or "")
     answer = ask_persona(kol_query, question)
     return WorkerExecutionResult(
@@ -36,7 +36,7 @@ def run_report_task(task: DelegationTask) -> WorkerExecutionResult:
         report = generate_daily_market_report(time_range=str(task.inputs.get("range") or "1d"))
     else:
         report = generate_kol_report(
-            str(task.inputs["kol_query"]),
+            str(task.inputs.get("kol_query") or task.inputs.get("kol") or ""),
             time_range=str(task.inputs.get("range") or "7d"),
         )
     return WorkerExecutionResult(
