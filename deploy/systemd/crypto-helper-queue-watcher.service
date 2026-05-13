@@ -1,0 +1,29 @@
+# systemd user service template for crypto_helper queue watcher.
+#
+# Install manually:
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/systemd/crypto-helper-queue-watcher.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now crypto-helper-queue-watcher.service
+#
+# View logs:
+#   journalctl --user -u crypto-helper-queue-watcher.service -f
+#
+# OpenClaw cron fallback:
+#   If systemd user services are unavailable, invoke the same command from cron
+#   or an OpenClaw scheduled runner. Keep only one watcher active; the watcher
+#   lock prevents duplicate active loops, but duplicate schedulers are noisy.
+
+[Unit]
+Description=Crypto Helper queue watcher
+After=default.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/zhmao/crypto_helper
+ExecStart=uv run crypto-helper queue watch --poll-interval 2 --cooldown 5 --lock-ttl 60 --json
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
