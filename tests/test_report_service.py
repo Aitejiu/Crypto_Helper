@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 
-from crypto_helper.core import report_service
+from crypto_helper.core.evidence_store import search_evidence as base_search_evidence
 from crypto_helper.core.report_service import (
     collect_report_context,
     finalize_report,
@@ -51,7 +51,7 @@ def test_collect_report_context_uses_search_evidence(
     called = {"count": 0}
     original = cast(
         Callable[..., EvidenceSearchResult],
-        report_service.search_evidence,
+        base_search_evidence,
     )
 
     def wrapped_search_evidence(
@@ -70,7 +70,10 @@ def test_collect_report_context_uses_search_evidence(
             limit=limit,
         )
 
-    monkeypatch.setattr(report_service, "search_evidence", wrapped_search_evidence)
+    monkeypatch.setattr(
+        "crypto_helper.core.report_service.search_evidence",
+        wrapped_search_evidence,
+    )
 
     context = collect_report_context("KOL_A", time_range="7d")
 
