@@ -26,6 +26,12 @@ from crypto_helper.agent_runtime.schemas import (
     WorkerExecutionResult,
     WorkerExecutionStatus,
 )
+from crypto_helper.agent_runtime.watcher_lock import (
+    acquire_watcher_lock,
+    get_watcher_lock_status,
+    refresh_watcher_lock,
+    release_watcher_lock,
+)
 
 __all__ = [
     "DelegationTask",
@@ -48,4 +54,8 @@ __all__ = [
     "retry_task",
     "process_next_queued_workflow",
     "process_queued_workflows_until_empty",
+    "acquire_watcher_lock",
+    "refresh_watcher_lock",
+    "release_watcher_lock",
+    "get_watcher_lock_status",
 ]
