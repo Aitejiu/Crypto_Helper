@@ -13,6 +13,12 @@ from crypto_helper.agent_runtime.schemas import (
     WorkerExecutionResult,
     WorkerExecutionStatus,
 )
+from crypto_helper.agent_runtime.workers import (
+    run_manager_admin_task,
+    run_persona_runtime_task,
+    run_report_task,
+    run_security_task,
+)
 
 SUPPORTED_TARGET_AGENTS = {
     "persona-runtime-agent",
@@ -48,17 +54,20 @@ def dispatch_next_task(
 
 
 def dispatch_task(task: DelegationTask) -> WorkerExecutionResult:
-    worker = _resolve_worker(task.target_agent)
-    return worker(task)
+    return _dispatch_to_worker(task)
 
 
 def _resolve_worker(target_agent: str) -> Callable[[DelegationTask], WorkerExecutionResult]:
     if target_agent not in SUPPORTED_TARGET_AGENTS:
         raise ValueError(f"Unsupported target agent: {target_agent}")
-    return _dispatch_to_worker
+    return {
+        "persona-runtime-agent": run_persona_runtime_task,
+        "report-agent": run_report_task,
+        "security-agent": run_security_task,
+        "manager-admin": run_manager_admin_task,
+    }[target_agent]
 
 
 def _dispatch_to_worker(task: DelegationTask) -> WorkerExecutionResult:
-    raise NotImplementedError(
-        f"Worker adapter for target agent {task.target_agent} is not implemented yet."
-    )
+    worker = _resolve_worker(task.target_agent)
+    return worker(task)
