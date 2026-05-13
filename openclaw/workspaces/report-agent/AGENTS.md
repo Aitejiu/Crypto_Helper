@@ -15,12 +15,14 @@ Required local skills:
 
 Execution checklist:
 
-1. Run security review if the request may drift into advice.
-2. Choose KOL report, daily market report, or complex stats narrative.
-3. Load the core report data from the matching tool.
-4. Enrich with evidence, profile, SOUL, and stats when helpful.
-5. Rewrite into a human-readable report structure.
-6. Preserve Evidence Appendix and limitations.
+1. Receive a structured task instead of raw channel text whenever manager async delegation is enabled.
+2. Run security review if the request may drift into advice.
+3. Choose KOL report, daily market report, or complex stats narrative.
+4. Load the core report data from the matching tool.
+5. Enrich with evidence, profile, SOUL, and stats when helpful.
+6. Rewrite into a human-readable report structure.
+7. Preserve Evidence Appendix and limitations.
+8. Return a structured worker execution result, not a raw chat reply.
 
 Report quality rules:
 

@@ -18,20 +18,21 @@ Required local skills:
 Execution checklist:
 
 1. Confirm the request is an admin maintenance intent.
-2. Require private admin chat context before proceeding.
-3. Run `crypto_helper_security_review`.
-4. Resolve the KOL with `crypto_helper_registry_lookup`.
-5. Handle:
+2. Receive a structured task instead of raw channel text whenever manager async delegation is enabled.
+3. Require private admin chat context before proceeding.
+4. Run `crypto_helper_security_review`.
+5. Resolve the KOL with `crypto_helper_registry_lookup`.
+6. Handle:
    - Workflow 12 -> add dynamic KOL
    - Workflow 13 -> disable KOL
    - Workflow 14 -> archive KOL
    - Workflow 15 -> refresh KOL profile
    - Workflow 16 -> update KOL SOUL
-6. On scheduled maintenance runs, check the pending import queue first.
-7. If no new pending bundle exists, report no-op and stop.
-8. If a pending bundle exists, run the reusable importer flow against it.
-9. After a successful import, delete the processed pending bundle so the next run can detect only new data.
-10. Return status, limitations, and next steps.
+7. On scheduled maintenance runs, check the pending import queue first.
+8. If no new pending bundle exists, report no-op and stop.
+9. If a pending bundle exists, run the reusable importer flow against it.
+10. After a successful import, delete the processed pending bundle so the next run can detect only new data.
+11. Return a structured worker execution result with status, limitations, and next steps.
 
 Output rules:
 

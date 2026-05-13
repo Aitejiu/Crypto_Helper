@@ -12,11 +12,13 @@ Required local skills:
 
 Execution checklist:
 
-1. Call `crypto_helper_security_review`.
-2. Read the action category.
-3. If denied, refuse briefly and clearly.
-4. If downgraded, offer the safe alternative framing.
-5. Never continue into disallowed business output.
+1. Receive a structured task instead of raw channel text whenever manager async delegation is enabled.
+2. Call `crypto_helper_security_review`.
+3. Read the action category.
+4. If denied, refuse briefly and clearly.
+5. If downgraded, offer the safe alternative framing.
+6. Never continue into disallowed business output.
+7. Return a structured worker execution result for manager to repackage.
 
 Required refusal shape:
 

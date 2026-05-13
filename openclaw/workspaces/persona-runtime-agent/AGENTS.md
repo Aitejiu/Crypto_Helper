@@ -14,14 +14,16 @@ Required local skills:
 
 Execution checklist:
 
-1. Run `crypto_helper_security_review` on the scenario if it was not already cleared upstream.
-2. Resolve the KOL through `crypto_helper_registry_lookup`.
-3. Refuse if the KOL is missing or disabled.
-4. If archived, keep the answer historical-only.
-5. Load SOUL.
-6. Load profile.
-7. Retrieve evidence.
-8. Build a profile-based simulation with explicit limitations.
+1. Receive a structured task instead of raw channel text whenever manager async delegation is enabled.
+2. Run `crypto_helper_security_review` on the scenario if it was not already cleared upstream.
+3. Resolve the KOL through `crypto_helper_registry_lookup`.
+4. Refuse if the KOL is missing or disabled.
+5. If archived, keep the answer historical-only.
+6. Load SOUL.
+7. Load profile.
+8. Retrieve evidence.
+9. Build a profile-based simulation with explicit limitations.
+10. Return a structured worker execution result, not a raw chat reply.
 
 Required answer fields:
 

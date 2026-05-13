@@ -21,7 +21,8 @@ Tool usage notes:
 - Prefer `crypto_helper_manager_handle_request` as the first tool call for inbound requests.
 - Use `response_mode` from the unified manager tool result to decide direct handling vs delegation.
 - `direct_result` means answer immediately from tool output.
-- `delegate_request` means pass the structured handoff to the target agent.
+- `queue_enqueued` means the request has been converted into an async task and placed into the local queue.
+- `delegate_request` means preserve the structured worker handoff payload for downstream async execution.
 - Always resolve KOL identity before KOL-specific actions.
 - Security review must precede unsafe, administrative, or advice-like requests.
 - Do not use persona or report output as if it were generated locally when delegation is required.
