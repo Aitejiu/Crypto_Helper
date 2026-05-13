@@ -358,3 +358,110 @@ def test_worker_and_finalize_commands(cli_runner: CliRunner) -> None:
     assert finalize_result.exit_code == 0
     assert finalize_payload["ok"] is True
     assert finalize_payload["result"]["status"] == "completed"
+
+
+def test_manager_receive_worker_result_done_task_returns_handoff(cli_runner: CliRunner) -> None:
+    task_id = _enqueue_and_claim_demo_task(cli_runner)
+    done_result = cli_runner.invoke(
+        app,
+        [
+            "queue",
+            "mark-done",
+            "--task-id",
+            task_id,
+            "--target-agent",
+            "persona-runtime-agent",
+            "--output-payload-json",
+            '{"answer":"ok"}',
+            "--evidence-refs-json",
+            '[{"evidence_id":"ev_1"}]',
+            "--limitations-json",
+            '["historical only"]',
+            "--json",
+        ],
+    )
+    assert done_result.exit_code == 0
+
+    receive_result = cli_runner.invoke(
+        app,
+        ["manager", "receive-worker-result", "--task-id", task_id, "--json"],
+    )
+    receive_payload = json.loads(receive_result.output)
+
+    assert receive_result.exit_code == 0
+    assert receive_payload["ok"] is True
+    assert receive_payload["result"]["manager_agent"] == "manager-agent"
+    assert receive_payload["result"]["task_id"] == task_id
+    assert receive_payload["result"]["response_payload"]["answer"] == "ok"
+    assert receive_payload["result"]["evidence_refs"][0]["evidence_id"] == "ev_1"
+
+
+def test_manager_receive_worker_result_failed_task_returns_failed_handoff(
+    cli_runner: CliRunner,
+) -> None:
+    task_id = _enqueue_and_claim_demo_task(cli_runner)
+    failed_result = cli_runner.invoke(
+        app,
+        [
+            "queue",
+            "mark-failed",
+            "--task-id",
+            task_id,
+            "--error",
+            "worker crashed",
+            "--json",
+        ],
+    )
+    assert failed_result.exit_code == 0
+
+    receive_result = cli_runner.invoke(
+        app,
+        ["manager", "receive-worker-result", "--task-id", task_id, "--json"],
+    )
+    receive_payload = json.loads(receive_result.output)
+
+    assert receive_result.exit_code == 0
+    assert receive_payload["ok"] is True
+    assert receive_payload["result"]["manager_agent"] == "manager-agent"
+    assert receive_payload["result"]["status"] == "failed"
+    assert receive_payload["result"]["error"] == "worker crashed"
+    assert receive_payload["result"]["response_payload"]["error"] == "worker crashed"
+
+
+def test_manager_receive_worker_result_missing_task_returns_ok_false(
+    cli_runner: CliRunner,
+) -> None:
+    result = cli_runner.invoke(
+        app,
+        ["manager", "receive-worker-result", "--task-id", "missing-task", "--json"],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 1
+    assert payload["ok"] is False
+    assert payload["code"] == "QUEUE_TASK_NOT_FOUND"
+
+
+def test_manager_receive_worker_result_missing_result_returns_ok_false(
+    cli_runner: CliRunner,
+) -> None:
+    enqueue_result = cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    task_id = json.loads(enqueue_result.output)["result"]["task_id"]
+
+    result = cli_runner.invoke(
+        app,
+        ["manager", "receive-worker-result", "--task-id", task_id, "--json"],
+    )
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 1
+    assert payload["ok"] is False
+    assert payload["code"] == "QUEUE_TASK_RESULT_NOT_FOUND"
+
+
+def _enqueue_and_claim_demo_task(cli_runner: CliRunner) -> str:
+    enqueue_result = cli_runner.invoke(app, ["queue", "enqueue-demo", "--json"])
+    task_id = str(json.loads(enqueue_result.output)["result"]["task_id"])
+    claim_result = cli_runner.invoke(app, ["queue", "claim-next", "--json"])
+    assert claim_result.exit_code == 0
+    return task_id

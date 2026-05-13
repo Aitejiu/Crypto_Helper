@@ -752,6 +752,15 @@ def manager_finalize_task(
     _emit(lambda: _finalize_task_payload(task_id))
 
 
+@manager_app.command("receive-worker-result")
+def manager_receive_worker_result(
+    task_id: str = typer.Option(..., "--task-id"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    del json_output
+    _emit(lambda: _receive_worker_result_payload(task_id))
+
+
 def main() -> None:
     app()
 
@@ -903,11 +912,28 @@ def _mark_failed_payload(task_id: str, error: str) -> dict[str, Any]:
 
 
 def _finalize_task_payload(task_id: str) -> Any:
-    from crypto_helper.agent_runtime.schemas import WorkerExecutionResult
     from crypto_helper.services.manager_response_service import (
         build_manager_response_from_worker_result,
     )
 
+    task, result = _load_task_and_worker_result(task_id)
+    return build_manager_response_from_worker_result(task, result)
+
+
+def _receive_worker_result_payload(task_id: str) -> Any:
+    from crypto_helper.services.manager_handoff_service import (
+        build_manager_handoff_from_response,
+    )
+    from crypto_helper.services.manager_response_service import (
+        build_manager_response_from_worker_result,
+    )
+
+    task, result = _load_task_and_worker_result(task_id)
+    manager_response = build_manager_response_from_worker_result(task, result)
+    return build_manager_handoff_from_response(task, manager_response)
+
+
+def _load_task_and_worker_result(task_id: str) -> tuple[DelegationTask, WorkerExecutionResult]:
     task = _require_task(task_id)
     raw_result = get_task_result(task_id)
     if raw_result is None:
@@ -916,8 +942,25 @@ def _finalize_task_payload(task_id: str) -> Any:
             code="QUEUE_TASK_RESULT_NOT_FOUND",
             metadata={"task_id": task_id},
         )
-    result = WorkerExecutionResult.model_validate(raw_result)
-    return build_manager_response_from_worker_result(task, result)
+    return task, _worker_result_from_stored_payload(task, raw_result)
+
+
+def _worker_result_from_stored_payload(
+    task: DelegationTask,
+    raw_result: dict[str, Any],
+) -> WorkerExecutionResult:
+    if "target_agent" in raw_result and "completed_at" in raw_result:
+        return WorkerExecutionResult.model_validate(raw_result)
+    return WorkerExecutionResult(
+        task_id=str(raw_result.get("task_id", task.task_id)),
+        target_agent=task.target_agent,
+        status=WorkerExecutionStatus(str(raw_result.get("status", WorkerExecutionStatus.FAILED))),
+        output_payload={},
+        evidence_refs=[],
+        limitations=[str(raw_result["error"])] if raw_result.get("error") else [],
+        completed_at=datetime.now(UTC),
+        error=str(raw_result["error"]) if raw_result.get("error") else None,
+    )
 
 
 def _parse_json_object(payload: str) -> dict[str, Any]:
