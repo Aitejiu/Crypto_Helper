@@ -48,3 +48,39 @@ class WorkerExecutionResult(DomainModel):
     limitations: list[str] = Field(default_factory=list)
     completed_at: datetime
     error: str | None = None
+
+
+class ManagerHandoffResult(DomainModel):
+    task_id: str
+    workflow_run_id: str
+    workflow_id: str
+    manager_agent: str = "manager-agent"
+    status: str
+    request_context: RequestContext
+    response_payload: dict[str, Any] = Field(default_factory=dict)
+    evidence_refs: list[dict[str, Any]] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    delivery_hint: str = "reply_to_original_request"
+    error: str | None = None
+
+
+class DispatchLoopItem(DomainModel):
+    task_id: str
+    workflow_id: str
+    target_agent: str
+    worker_status: str
+    queue_status: QueueStatus
+    manager_response_status: str
+    manager_handoff_status: str
+    error: str | None = None
+
+
+class DispatchLoopResult(DomainModel):
+    processed_count: int = 0
+    failed_count: int = 0
+    skipped_count: int = 0
+    queue_empty: bool = False
+    max_tasks_reached: bool = False
+    max_seconds_reached: bool = False
+    items: list[DispatchLoopItem] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)

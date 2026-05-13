@@ -14,6 +14,9 @@ from crypto_helper.agent_runtime.queue import (
 )
 from crypto_helper.agent_runtime.schemas import (
     DelegationTask,
+    DispatchLoopItem,
+    DispatchLoopResult,
+    ManagerHandoffResult,
     QueueStatus,
     WorkerExecutionResult,
     WorkerExecutionStatus,
@@ -21,6 +24,9 @@ from crypto_helper.agent_runtime.schemas import (
 
 __all__ = [
     "DelegationTask",
+    "DispatchLoopItem",
+    "DispatchLoopResult",
+    "ManagerHandoffResult",
     "QueueStatus",
     "WorkerExecutionResult",
     "WorkerExecutionStatus",
